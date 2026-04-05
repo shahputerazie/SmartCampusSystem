@@ -24,16 +24,19 @@ const ASSIGNED_TICKETS_URL = 'http://localhost:8080/api/tickets/assigned'
 const AUTH_URL = 'http://localhost:8080/api/auth'
 const USER_API_URL = 'http://localhost:8080/api/users'
 const ASSIGNEE_API_URL = 'http://localhost:8080/api/users/assignees'
+const CATEGORY_API_URL = 'http://localhost:8080/api/categories'
 const AUTH_STORAGE_KEY = 'scss-auth-token'
 
-const categoryOptions = ['IT Support', 'Maintenance', 'Security', 'Academic', 'Facilities']
 const statusOptions = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']
 const userRoleOptions = ['ADMIN', 'STAFF', 'ASSIGNEE']
 const staffNavItems = [
   { key: 'operations', label: 'Dashboard' },
   { key: 'ticket-management', label: 'Ticket Management' },
 ]
-const adminOnlyNavItems = [{ key: 'user-management', label: 'User Management' }]
+const adminOnlyNavItems = [
+  { key: 'user-management', label: 'User Management' },
+  { key: 'category-management', label: 'Category Management' },
+]
 const assigneeNavItems = [{ key: 'assigned-tickets', label: 'Assigned Tickets' }]
 const basicAccessNavItems = [{ key: 'report-issue', label: 'Submit Ticket' }]
 
@@ -56,7 +59,7 @@ const statusConfig = {
   },
 }
 
-const categoryMeta = {
+const fallbackCategoryMeta = {
   'IT Support': {
     department: 'Information Technology Centre',
     assignees: ['Aisyah Rahman', 'Imran Sofi', 'Faris Hakim'],
@@ -93,6 +96,8 @@ const categoryMeta = {
     sla: '6 hours',
   },
 }
+
+const fallbackCategoryOptions = Object.keys(fallbackCategoryMeta)
 
 const commentTemplates = {
   OPEN: [
@@ -144,7 +149,7 @@ const initialForm = {
   requesterName: '',
   requesterEmail: '',
   title: '',
-  category: categoryOptions[0],
+  category: '',
   description: '',
 }
 
@@ -153,6 +158,14 @@ const initialUserForm = {
   email: '',
   password: '',
   role: 'STAFF',
+}
+
+const initialCategoryForm = {
+  name: '',
+  department: '',
+  serviceLabel: '',
+  defaultLocation: '',
+  responseTarget: '',
 }
 
 function formatDateTime(value) {
@@ -198,8 +211,8 @@ function buildComments(status, assignee) {
   }))
 }
 
-function enrichTicket(ticket, index = 0) {
-  const meta = categoryMeta[ticket.category] || categoryMeta['Facilities']
+function enrichTicket(ticket, index = 0, categoryDirectory = fallbackCategoryMeta) {
+  const meta = categoryDirectory[ticket.category] || fallbackCategoryMeta['Facilities']
   const assignee = ticket.assignee || 'Unassigned'
   const status = ticket.status || 'OPEN'
   const location = ticket.location || meta.location
@@ -254,6 +267,14 @@ function App() {
   const [isSavingUser, setIsSavingUser] = useState(false)
   const [deletingUserId, setDeletingUserId] = useState(null)
   const [assigneeUsers, setAssigneeUsers] = useState([])
+  const [categories, setCategories] = useState([])
+  const [categoriesError, setCategoriesError] = useState('')
+  const [categoryNotice, setCategoryNotice] = useState('')
+  const [categoryForm, setCategoryForm] = useState(initialCategoryForm)
+  const [editingCategoryId, setEditingCategoryId] = useState(null)
+  const [isCategoriesLoading, setIsCategoriesLoading] = useState(false)
+  const [isSavingCategory, setIsSavingCategory] = useState(false)
+  const [deletingCategoryId, setDeletingCategoryId] = useState(null)
   const [temporaryRole, setTemporaryRole] = useState('')
 
   const effectiveRole = temporaryRole || currentUser?.role || ''
@@ -265,7 +286,27 @@ function App() {
         ? staffNavItems
         : effectiveRole === 'ASSIGNEE'
           ? assigneeNavItems
-        : basicAccessNavItems
+      : basicAccessNavItems
+
+  const categoryMeta = categories.length
+    ? Object.fromEntries(
+        categories.map((category) => [
+          category.name,
+          {
+            department: category.department,
+            assignees: fallbackCategoryMeta[category.name]?.assignees || [],
+            serviceLabel: category.serviceLabel,
+            location: category.defaultLocation,
+            sla: category.responseTarget,
+          },
+        ]),
+      )
+    : fallbackCategoryMeta
+  const categoryOptions = Object.keys(categoryMeta)
+
+  useEffect(() => {
+    void fetchCategories()
+  }, [])
 
   useEffect(() => {
     void bootstrapAuth()
@@ -332,12 +373,59 @@ function App() {
   }, [currentUser])
 
   useEffect(() => {
+    if (!categoryOptions.length) {
+      return
+    }
+
+    setForm((currentForm) => {
+      if (currentForm.category && categoryOptions.includes(currentForm.category)) {
+        return currentForm
+      }
+
+      return {
+        ...currentForm,
+        category: categoryOptions[0],
+      }
+    })
+  }, [categoryOptions])
+
+  useEffect(() => {
+    if (!categories.length || !tickets.length) {
+      return
+    }
+
+    setTickets((currentTickets) =>
+      currentTickets.map((ticket, index) => enrichTicket(ticket, index, categoryMeta)),
+    )
+  }, [categories])
+
+  useEffect(() => {
     if (!token || !isOperationsRole(currentUser?.role)) {
       return
     }
 
     void fetchAssigneeUsers()
   }, [token, currentUser?.role])
+
+  async function fetchCategories() {
+    try {
+      setIsCategoriesLoading(true)
+      setCategoriesError('')
+
+      const response = await fetch(CATEGORY_API_URL)
+      if (!response.ok) {
+        throw new Error(`Failed to load categories: ${response.status}`)
+      }
+
+      const data = await response.json()
+      setCategories(Array.isArray(data) ? data : [])
+    } catch (categoryError) {
+      setCategories([])
+      setCategoriesError(categoryError.message || 'Unable to load categories.')
+    } finally {
+      setIsCategoriesLoading(false)
+    }
+  }
 
   async function fetchTickets() {
     try {
@@ -358,18 +446,18 @@ function App() {
 
       const data = await response.json()
       const normalizedTickets = (Array.isArray(data) ? data : []).map((ticket, index) =>
-        enrichTicket(ticket, index),
+        enrichTicket(ticket, index, categoryMeta),
       )
 
       const availableTickets = normalizedTickets.length
         ? normalizedTickets
-        : demoTickets.map((ticket, index) => enrichTicket(ticket, index))
+        : demoTickets.map((ticket, index) => enrichTicket(ticket, index, categoryMeta))
 
       setTickets(availableTickets)
       setSelectedTicketId(availableTickets[0]?.id ?? null)
       setIsDemoMode(!normalizedTickets.length)
     } catch (fetchError) {
-      const fallbackTickets = demoTickets.map((ticket, index) => enrichTicket(ticket, index))
+      const fallbackTickets = demoTickets.map((ticket, index) => enrichTicket(ticket, index, categoryMeta))
       setTickets(fallbackTickets)
       setSelectedTicketId(fallbackTickets[0]?.id ?? null)
       setIsDemoMode(true)
@@ -465,7 +553,7 @@ function App() {
         throw new Error(`Failed to create ticket: ${response.status}`)
       }
 
-      const createdTicket = enrichTicket(await response.json(), 0)
+      const createdTicket = enrichTicket(await response.json(), 0, categoryMeta)
 
       if (isOperationsRole(currentUser?.role)) {
         setTickets((currentTickets) => [createdTicket, ...currentTickets])
@@ -485,6 +573,7 @@ function App() {
           createdAt: new Date().toISOString(),
         },
         0,
+        categoryMeta,
       )
 
       if (isOperationsRole(currentUser?.role)) {
@@ -505,7 +594,7 @@ function App() {
   }
 
   function upsertTicket(ticket) {
-    const normalizedTicket = enrichTicket(ticket, 0)
+    const normalizedTicket = enrichTicket(ticket, 0, categoryMeta)
 
     setTickets((currentTickets) => {
       const exists = currentTickets.some((currentTicket) => currentTicket.id === normalizedTicket.id)
@@ -766,18 +855,18 @@ function App() {
 
       const data = await response.json()
       const normalizedTickets = (Array.isArray(data) ? data : []).map((ticket, index) =>
-        enrichTicket(ticket, index),
+        enrichTicket(ticket, index, categoryMeta),
       )
 
       const availableTickets = normalizedTickets.length
         ? normalizedTickets
-        : demoTickets.map((ticket, index) => enrichTicket(ticket, index))
+        : demoTickets.map((ticket, index) => enrichTicket(ticket, index, categoryMeta))
 
       setTickets(availableTickets)
       setSelectedTicketId(availableTickets[0]?.id ?? null)
       setIsDemoMode(!normalizedTickets.length)
     } catch (fetchError) {
-      const fallbackTickets = demoTickets.map((ticket, index) => enrichTicket(ticket, index))
+      const fallbackTickets = demoTickets.map((ticket, index) => enrichTicket(ticket, index, categoryMeta))
       setTickets(fallbackTickets)
       setSelectedTicketId(fallbackTickets[0]?.id ?? null)
       setIsDemoMode(true)
@@ -810,7 +899,7 @@ function App() {
 
       const data = await response.json()
       const normalizedTickets = (Array.isArray(data) ? data : []).map((ticket, index) =>
-        enrichTicket(ticket, index),
+        enrichTicket(ticket, index, categoryMeta),
       )
 
       setTickets(normalizedTickets)
@@ -852,6 +941,11 @@ function App() {
     setEditingUserId(null)
   }
 
+  function resetCategoryForm() {
+    setCategoryForm(initialCategoryForm)
+    setEditingCategoryId(null)
+  }
+
   function beginEditUser(user) {
     setEditingUserId(user.id)
     setUserNotice('')
@@ -861,6 +955,19 @@ function App() {
       email: user.email ?? '',
       password: '',
       role: user.role ?? 'STAFF',
+    })
+  }
+
+  function beginEditCategory(category) {
+    setEditingCategoryId(category.id)
+    setCategoryNotice('')
+    setCategoriesError('')
+    setCategoryForm({
+      name: category.name ?? '',
+      department: category.department ?? '',
+      serviceLabel: category.serviceLabel ?? '',
+      defaultLocation: category.defaultLocation ?? '',
+      responseTarget: category.responseTarget ?? '',
     })
   }
 
@@ -997,6 +1104,126 @@ function App() {
     }
   }
 
+  async function handleCategorySubmit(event) {
+    event.preventDefault()
+
+    const payload = {
+      name: categoryForm.name.trim(),
+      department: categoryForm.department.trim(),
+      serviceLabel: categoryForm.serviceLabel.trim(),
+      defaultLocation: categoryForm.defaultLocation.trim(),
+      responseTarget: categoryForm.responseTarget.trim(),
+    }
+
+    if (
+      !payload.name ||
+      !payload.department ||
+      !payload.serviceLabel ||
+      !payload.defaultLocation ||
+      !payload.responseTarget
+    ) {
+      setCategoriesError('All category fields are required.')
+      return
+    }
+
+    try {
+      setIsSavingCategory(true)
+      setCategoriesError('')
+      setCategoryNotice('')
+
+      const response = await fetch(
+        editingCategoryId ? `${CATEGORY_API_URL}/${editingCategoryId}` : CATEGORY_API_URL,
+        {
+          method: editingCategoryId ? 'PUT' : 'POST',
+          headers: {
+            ...authHeaders(),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        },
+      )
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          handleUnauthorized('Your session has expired. Please log in again.')
+          return
+        }
+
+        throw new Error(
+          await parseErrorMessage(
+            response,
+            editingCategoryId ? 'Failed to update category.' : 'Failed to create category.',
+          ),
+        )
+      }
+
+      const savedCategory = await response.json()
+      setCategories((currentCategories) => {
+        const exists = currentCategories.some((category) => category.id === savedCategory.id)
+        const nextCategories = exists
+          ? currentCategories.map((category) =>
+              category.id === savedCategory.id ? savedCategory : category,
+            )
+          : [...currentCategories, savedCategory]
+
+        return nextCategories.sort((left, right) => left.name.localeCompare(right.name))
+      })
+      setCategoryNotice(
+        editingCategoryId
+          ? `Category ${savedCategory.name} updated successfully.`
+          : `Category ${savedCategory.name} created successfully.`,
+      )
+      resetCategoryForm()
+    } catch (saveError) {
+      setCategoriesError(saveError.message || 'Unable to save category.')
+    } finally {
+      setIsSavingCategory(false)
+    }
+  }
+
+  async function handleDeleteCategory(category) {
+    const confirmed = window.confirm(
+      `Delete category "${category.name}"? This action cannot be undone.`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      setDeletingCategoryId(category.id)
+      setCategoriesError('')
+      setCategoryNotice('')
+
+      const response = await fetch(`${CATEGORY_API_URL}/${category.id}`, {
+        method: 'DELETE',
+        headers: authHeaders(),
+      })
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          handleUnauthorized('Your session has expired. Please log in again.')
+          return
+        }
+
+        throw new Error(await parseErrorMessage(response, 'Failed to delete category.'))
+      }
+
+      setCategories((currentCategories) =>
+        currentCategories.filter((currentCategory) => currentCategory.id !== category.id),
+      )
+      setCategoryNotice(`Category ${category.name} deleted successfully.`)
+
+      if (editingCategoryId === category.id) {
+        resetCategoryForm()
+      }
+    } catch (deleteError) {
+      setCategoriesError(deleteError.message || 'Unable to delete category.')
+    } finally {
+      setDeletingCategoryId(null)
+    }
+  }
+
   async function parseErrorMessage(response, fallbackMessage) {
     try {
       const text = await response.text()
@@ -1042,6 +1269,20 @@ function App() {
 
   const filteredUsers = users.filter((user) => {
     const searchable = [user.username ?? '', user.email ?? '', user.role ?? '', String(user.id ?? '')]
+
+    return normalizedQuery
+      ? searchable.some((value) => value.toLowerCase().includes(normalizedQuery))
+      : true
+  })
+
+  const filteredCategories = categories.filter((category) => {
+    const searchable = [
+      category.name ?? '',
+      category.department ?? '',
+      category.serviceLabel ?? '',
+      category.defaultLocation ?? '',
+      category.responseTarget ?? '',
+    ]
 
     return normalizedQuery
       ? searchable.some((value) => value.toLowerCase().includes(normalizedQuery))
@@ -1161,12 +1402,15 @@ function App() {
     'assigned-tickets': 'Assigned tickets',
     'ticket-management': 'Ticket management',
     'user-management': 'User management',
+    'category-management': 'Category management',
   }
 
   const panelTitle = panelTitleMap[activeNav] || 'Smart Campus Support System'
   const searchPlaceholder =
     activeNav === 'user-management'
       ? 'Search users by username, email, role, or ID'
+      : activeNav === 'category-management'
+        ? 'Search categories, departments, service labels, or locations'
       : 'Search tickets, departments, assignees, or locations'
 
   const selectedAssigneeOptions = assigneeUsers.length
@@ -1793,6 +2037,302 @@ function App() {
     )
   }
 
+  function renderCategoryManagementPage() {
+    const editingCategory = categories.find((category) => category.id === editingCategoryId) ?? null
+
+    return (
+      <section className="mt-6 grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">Category management</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Manage support categories, department routing, service labels, locations, and response targets.
+              </p>
+            </div>
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003366] text-white">
+              <Wrench className="h-5 w-5" />
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <article className="rounded-3xl bg-slate-50 p-5">
+              <p className="text-sm font-semibold text-slate-900">Categories</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                {categories.length}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Total managed request categories available for routing.
+              </p>
+            </article>
+
+            <article className="rounded-3xl bg-slate-50 p-5">
+              <p className="text-sm font-semibold text-slate-900">Departments</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                {new Set(categories.map((category) => category.department)).size}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Distinct departments currently mapped to category routing.
+              </p>
+            </article>
+
+            <article className="rounded-3xl bg-slate-50 p-5">
+              <p className="text-sm font-semibold text-slate-900">Filtered results</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                {filteredCategories.length}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Results matching the current search query.
+              </p>
+            </article>
+          </div>
+
+          {categoryNotice ? (
+            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+              {categoryNotice}
+            </div>
+          ) : null}
+
+          {categoriesError ? (
+            <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {categoriesError}
+            </div>
+          ) : null}
+
+          <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200/80">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 text-left">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Category
+                    </th>
+                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Department
+                    </th>
+                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Location
+                    </th>
+                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Target
+                    </th>
+                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {isCategoriesLoading ? (
+                    <tr>
+                      <td className="px-5 py-6 text-sm text-slate-500" colSpan="5">
+                        Loading categories...
+                      </td>
+                    </tr>
+                  ) : filteredCategories.length ? (
+                    filteredCategories.map((category) => (
+                      <tr key={category.id} className="align-top">
+                        <td className="px-5 py-4">
+                          <p className="text-sm font-semibold text-slate-950">{category.name}</p>
+                          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
+                            {category.serviceLabel}
+                          </p>
+                        </td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{category.department}</td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{category.defaultLocation}</td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{category.responseTarget}</td>
+                        <td className="px-5 py-4">
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => beginEditCategory(category)}
+                              className="inline-flex h-9 items-center justify-center rounded-2xl border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-[#003366]"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteCategory(category)}
+                              disabled={deletingCategoryId === category.id}
+                              className="inline-flex h-9 items-center justify-center rounded-2xl border border-rose-200 px-3 text-sm font-medium text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
+                            >
+                              {deletingCategoryId === category.id ? 'Deleting...' : 'Delete'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td className="px-5 py-6 text-sm text-slate-500" colSpan="5">
+                        No categories match the current search.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">
+                {editingCategory ? `Edit ${editingCategory.name}` : 'Create category'}
+              </h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Configure how ticket requests are routed and described across the system.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={resetCategoryForm}
+              className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+            >
+              {editingCategory ? 'Cancel edit' : 'Reset'}
+            </button>
+          </div>
+
+          <form className="mt-6 space-y-5" onSubmit={handleCategorySubmit}>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700" htmlFor="category-name">
+                Category name
+              </label>
+              <input
+                id="category-name"
+                type="text"
+                required
+                value={categoryForm.name}
+                onChange={(event) =>
+                  setCategoryForm((currentForm) => ({
+                    ...currentForm,
+                    name: event.target.value,
+                  }))
+                }
+                placeholder="Example: IT Support"
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700" htmlFor="category-department">
+                Department
+              </label>
+              <input
+                id="category-department"
+                type="text"
+                required
+                value={categoryForm.department}
+                onChange={(event) =>
+                  setCategoryForm((currentForm) => ({
+                    ...currentForm,
+                    department: event.target.value,
+                  }))
+                }
+                placeholder="Example: Information Technology Centre"
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
+              />
+            </div>
+
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700" htmlFor="category-service-label">
+                  Service label
+                </label>
+                <input
+                  id="category-service-label"
+                  type="text"
+                  required
+                  value={categoryForm.serviceLabel}
+                  onChange={(event) =>
+                    setCategoryForm((currentForm) => ({
+                      ...currentForm,
+                      serviceLabel: event.target.value,
+                    }))
+                  }
+                  placeholder="Example: Network & systems"
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700" htmlFor="category-response-target">
+                  Response target
+                </label>
+                <input
+                  id="category-response-target"
+                  type="text"
+                  required
+                  value={categoryForm.responseTarget}
+                  onChange={(event) =>
+                    setCategoryForm((currentForm) => ({
+                      ...currentForm,
+                      responseTarget: event.target.value,
+                    }))
+                  }
+                  placeholder="Example: 4 hours"
+                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700" htmlFor="category-location">
+                Default location
+              </label>
+              <input
+                id="category-location"
+                type="text"
+                required
+                value={categoryForm.defaultLocation}
+                onChange={(event) =>
+                  setCategoryForm((currentForm) => ({
+                    ...currentForm,
+                    defaultLocation: event.target.value,
+                  }))
+                }
+                placeholder="Example: Computer Lab 2"
+                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
+              />
+            </div>
+
+            <div className="rounded-3xl bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Routing summary
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                The category name appears in ticket forms. Department, service label, location, and response target are used across the public landing page and operations views.
+              </p>
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={resetCategoryForm}
+                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
+              >
+                Clear
+              </button>
+              <button
+                type="submit"
+                disabled={isSavingCategory}
+                className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#003366] px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(0,51,102,0.22)] transition hover:bg-[#0a4278] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                {isSavingCategory
+                  ? editingCategoryId
+                    ? 'Saving...'
+                    : 'Creating...'
+                  : editingCategoryId
+                    ? 'Save Changes'
+                    : 'Create Category'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    )
+  }
+
   function renderOperationsView() {
     if (effectiveRole === 'STAFF') {
       return renderStaffDashboard()
@@ -2127,6 +2667,9 @@ function App() {
     if (activeNav === 'report-issue') return renderBasicAccessView()
     if (activeNav === 'assigned-tickets') return renderAssignedTicketsPage()
     if (activeNav === 'ticket-management') return renderManagementPage()
+    if (activeNav === 'category-management' && effectiveRole === 'ADMIN') {
+      return renderCategoryManagementPage()
+    }
     if (activeNav === 'user-management' && effectiveRole === 'ADMIN') {
       return renderUserManagementPage()
     }

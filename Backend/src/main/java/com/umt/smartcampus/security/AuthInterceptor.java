@@ -30,6 +30,10 @@ public class AuthInterceptor implements HandlerInterceptor {
             return true;
         }
 
+        if (isPublicCategoryRead(request)) {
+            return true;
+        }
+
         String header = request.getHeader(HttpHeaders.AUTHORIZATION);
         String token = extractBearerToken(header);
 
@@ -46,6 +50,11 @@ public class AuthInterceptor implements HandlerInterceptor {
     private boolean isPublicTicketSubmission(HttpServletRequest request) {
         return HttpMethod.POST.matches(request.getMethod())
                 && "/api/tickets".equals(request.getRequestURI());
+    }
+
+    private boolean isPublicCategoryRead(HttpServletRequest request) {
+        return HttpMethod.GET.matches(request.getMethod())
+                && request.getRequestURI().startsWith("/api/categories");
     }
 
     private String extractBearerToken(String header) {

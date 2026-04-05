@@ -10,6 +10,7 @@ const iconMap = {
   'report-issue': TicketPlus,
   operations: LayoutDashboard,
   'ticket-management': Wrench,
+  'category-management': TicketPlus,
   'user-management': Users,
 }
 
