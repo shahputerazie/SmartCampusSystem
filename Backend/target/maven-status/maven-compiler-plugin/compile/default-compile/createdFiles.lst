@@ -1,4 +1,8 @@
 com/umt/smartcampus/SmartcampusApplication.class
-com/scss/smartcampus/models/Comment.class
-com/scss/smartcampus/models/Ticket.class
-com/scss/smartcampus/models/User.class
+com/umt/smartcampus/models/User.class
+com/umt/smartcampus/repositories/UserRepository.class
+com/umt/smartcampus/repositories/TicketRepository.class
+com/umt/smartcampus/controllers/TicketController.class
+com/umt/smartcampus/models/Ticket.class
+com/umt/smartcampus/models/Comment.class
+com/umt/smartcampus/repositories/CommentRepository.class

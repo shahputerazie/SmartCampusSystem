@@ -1,7 +1,10 @@
-package com.scss.smartcampus.models;
+package com.umt.smartcampus.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -14,8 +17,11 @@ public class Comment {
     private Long id;
 
     private String message;
+    private String authorName;
+    private String authorRole;
 
     @ManyToOne
+    @JsonIgnore
     @JoinColumn(name = "ticket_id")
     private Ticket ticket;
 
@@ -23,6 +29,7 @@ public class Comment {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 }

@@ -1,7 +1,10 @@
-package com.scss.smartcampus.models;
+package com.umt.smartcampus.models;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,13 +20,21 @@ public class Ticket {
     private String description;
     private String category;
     private String status = "OPEN";
+    private String assignee;
+    private String location;
+    private String requesterName;
+    private String requesterEmail;
 
     // Links to the User table
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
-    // Automatically records when the ticket was created
-    @Column(name = "created_at", insertable = false, updatable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }
