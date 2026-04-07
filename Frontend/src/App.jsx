@@ -32,10 +32,11 @@ const userRoleOptions = ['ADMIN', 'STAFF', 'ASSIGNEE']
 const staffNavItems = [
   { key: 'operations', label: 'Dashboard' },
   { key: 'ticket-management', label: 'Ticket Management' },
+  { key: 'assignee-management', label: 'Assignee Management' },
+  { key: 'category-management', label: 'Department Management' },
 ]
 const adminOnlyNavItems = [
   { key: 'user-management', label: 'User Management' },
-  { key: 'category-management', label: 'Category Management' },
 ]
 const assigneeNavItems = [{ key: 'assigned-tickets', label: 'Assigned Tickets' }]
 const basicAccessNavItems = [{ key: 'report-issue', label: 'Submit Ticket' }]
@@ -234,6 +235,10 @@ function enrichTicket(ticket, index = 0, categoryDirectory = fallbackCategoryMet
   }
 }
 
+function notifyAction(message) {
+  window.alert(message)
+}
+
 function App() {
   const [tickets, setTickets] = useState([])
   const [query, setQuery] = useState('')
@@ -414,14 +419,14 @@ function App() {
 
       const response = await fetch(CATEGORY_API_URL)
       if (!response.ok) {
-        throw new Error(`Failed to load categories: ${response.status}`)
+        throw new Error(`Failed to load departments: ${response.status}`)
       }
 
       const data = await response.json()
       setCategories(Array.isArray(data) ? data : [])
     } catch (categoryError) {
       setCategories([])
-      setCategoriesError(categoryError.message || 'Unable to load categories.')
+      setCategoriesError(categoryError.message || 'Unable to load departments.')
     } finally {
       setIsCategoriesLoading(false)
     }
@@ -562,7 +567,9 @@ function App() {
       }
 
       setIsDemoMode(false)
-      setSubmitNotice(`Ticket SCSS-${createdTicket.id ?? 'NEW'} submitted successfully.`)
+      const message = `Ticket SCSS-${createdTicket.id ?? 'NEW'} submitted successfully.`
+      setSubmitNotice(message)
+      notifyAction(message)
       setForm(initialForm)
       setIsModalOpen(false)
     } catch (submitError) {
@@ -584,7 +591,9 @@ function App() {
 
       setIsDemoMode(true)
       setError('Backend create endpoint is unavailable. Ticket added in interface demo mode.')
-      setSubmitNotice(`Ticket SCSS-${localTicket.id} submitted in demo mode.`)
+      const message = `Ticket SCSS-${localTicket.id} submitted in demo mode.`
+      setSubmitNotice(message)
+      notifyAction(message)
       setForm(initialForm)
       setIsModalOpen(false)
       console.error(submitError)
@@ -634,8 +643,11 @@ function App() {
 
       upsertTicket(await response.json())
       setIsDemoMode(false)
+      notifyAction(`Ticket status updated to ${getStatusLabel(status)}.`)
     } catch (statusError) {
-      setError(statusError.message || 'Unable to update ticket status.')
+      const message = statusError.message || 'Unable to update ticket status.'
+      setError(message)
+      notifyAction(message)
     }
   }
 
@@ -663,8 +675,11 @@ function App() {
 
       upsertTicket(await response.json())
       setIsDemoMode(false)
+      notifyAction(`Ticket assigned to ${assignee}.`)
     } catch (assignmentError) {
-      setError(assignmentError.message || 'Unable to update ticket assignee.')
+      const message = assignmentError.message || 'Unable to update ticket assignee.'
+      setError(message)
+      notifyAction(message)
     }
   }
 
@@ -701,8 +716,11 @@ function App() {
       upsertTicket(await response.json())
       setDraftComment('')
       setIsDemoMode(false)
+      notifyAction('Ticket comment added successfully.')
     } catch (commentError) {
-      setError(commentError.message || 'Unable to add ticket comment.')
+      const message = commentError.message || 'Unable to add ticket comment.'
+      setError(message)
+      notifyAction(message)
     }
   }
 
@@ -1047,15 +1065,19 @@ function App() {
         )
       })
 
-      setUserNotice(
-        editingUserId
-          ? `User ${savedUser.username} updated successfully.`
-          : `User ${savedUser.username} created successfully.`,
-      )
+      const message = editingUserId
+        ? `User ${savedUser.username} updated successfully.`
+        : `User ${savedUser.username} created successfully.`
+      setUserNotice(message)
+      notifyAction(message)
       await fetchAssigneeUsers()
       resetUserForm()
     } catch (saveError) {
-      setUsersError(saveError.message || 'Unable to save user.')
+      const message = saveError.message || 'Unable to save user.'
+      setUsersError(message)
+      notifyAction(
+        message.includes('already in use') ? `User update blocked: ${message}` : message,
+      )
     } finally {
       setIsSavingUser(false)
     }
@@ -1091,14 +1113,18 @@ function App() {
       }
 
       setUsers((currentUsers) => currentUsers.filter((currentUserItem) => currentUserItem.id !== user.id))
-      setUserNotice(`User ${user.username} deleted successfully.`)
+      const message = `User ${user.username} deleted successfully.`
+      setUserNotice(message)
+      notifyAction(message)
       await fetchAssigneeUsers()
 
       if (editingUserId === user.id) {
         resetUserForm()
       }
     } catch (deleteError) {
-      setUsersError(deleteError.message || 'Unable to delete user.')
+      const message = deleteError.message || 'Unable to delete user.'
+      setUsersError(message)
+      notifyAction(message)
     } finally {
       setDeletingUserId(null)
     }
@@ -1122,7 +1148,7 @@ function App() {
       !payload.defaultLocation ||
       !payload.responseTarget
     ) {
-      setCategoriesError('All category fields are required.')
+      setCategoriesError('All department fields are required.')
       return
     }
 
@@ -1152,7 +1178,7 @@ function App() {
         throw new Error(
           await parseErrorMessage(
             response,
-            editingCategoryId ? 'Failed to update category.' : 'Failed to create category.',
+            editingCategoryId ? 'Failed to update department.' : 'Failed to create department.',
           ),
         )
       }
@@ -1168,14 +1194,16 @@ function App() {
 
         return nextCategories.sort((left, right) => left.name.localeCompare(right.name))
       })
-      setCategoryNotice(
-        editingCategoryId
-          ? `Category ${savedCategory.name} updated successfully.`
-          : `Category ${savedCategory.name} created successfully.`,
-      )
+      const message = editingCategoryId
+        ? `Department ${savedCategory.name} updated successfully.`
+        : `Department ${savedCategory.name} created successfully.`
+      setCategoryNotice(message)
+      notifyAction(message)
       resetCategoryForm()
     } catch (saveError) {
-      setCategoriesError(saveError.message || 'Unable to save category.')
+      const message = saveError.message || 'Unable to save department.'
+      setCategoriesError(message)
+      notifyAction(message)
     } finally {
       setIsSavingCategory(false)
     }
@@ -1183,7 +1211,7 @@ function App() {
 
   async function handleDeleteCategory(category) {
     const confirmed = window.confirm(
-      `Delete category "${category.name}"? This action cannot be undone.`,
+      `Delete department "${category.name}"? This action cannot be undone.`,
     )
 
     if (!confirmed) {
@@ -1206,19 +1234,23 @@ function App() {
           return
         }
 
-        throw new Error(await parseErrorMessage(response, 'Failed to delete category.'))
+        throw new Error(await parseErrorMessage(response, 'Failed to delete department.'))
       }
 
       setCategories((currentCategories) =>
         currentCategories.filter((currentCategory) => currentCategory.id !== category.id),
       )
-      setCategoryNotice(`Category ${category.name} deleted successfully.`)
+      const message = `Department ${category.name} deleted successfully.`
+      setCategoryNotice(message)
+      notifyAction(message)
 
       if (editingCategoryId === category.id) {
         resetCategoryForm()
       }
     } catch (deleteError) {
-      setCategoriesError(deleteError.message || 'Unable to delete category.')
+      const message = deleteError.message || 'Unable to delete department.'
+      setCategoriesError(message)
+      notifyAction(message)
     } finally {
       setDeletingCategoryId(null)
     }
@@ -1268,6 +1300,14 @@ function App() {
   })
 
   const filteredUsers = users.filter((user) => {
+    const searchable = [user.username ?? '', user.email ?? '', user.role ?? '', String(user.id ?? '')]
+
+    return normalizedQuery
+      ? searchable.some((value) => value.toLowerCase().includes(normalizedQuery))
+      : true
+  })
+
+  const filteredAssignees = assigneeUsers.filter((user) => {
     const searchable = [user.username ?? '', user.email ?? '', user.role ?? '', String(user.id ?? '')]
 
     return normalizedQuery
@@ -1401,16 +1441,19 @@ function App() {
     operations: effectiveRole === 'STAFF' ? 'Staff dashboard' : 'Admin dashboard',
     'assigned-tickets': 'Assigned tickets',
     'ticket-management': 'Ticket management',
+    'assignee-management': 'Assignee management',
     'user-management': 'User management',
-    'category-management': 'Category management',
+    'category-management': 'Department management',
   }
 
   const panelTitle = panelTitleMap[activeNav] || 'Smart Campus Support System'
   const searchPlaceholder =
     activeNav === 'user-management'
       ? 'Search users by username, email, role, or ID'
+      : activeNav === 'assignee-management'
+        ? 'Search assignees by username, email, or ID'
       : activeNav === 'category-management'
-        ? 'Search categories, departments, service labels, or locations'
+        ? 'Search departments, service labels, or locations'
       : 'Search tickets, departments, assignees, or locations'
 
   const selectedAssigneeOptions = assigneeUsers.length
@@ -1418,6 +1461,18 @@ function App() {
     : selectedTicket && categoryMeta[selectedTicket.category]
       ? categoryMeta[selectedTicket.category].assignees
       : categoryMeta['Facilities'].assignees
+
+  function openDispatchQueue(targetTicketId = null) {
+    setStatusFilter('OPEN')
+    setQuery('')
+    setActiveNav('ticket-management')
+
+    const fallbackTicketId = unassignedOpenTickets[0]?.id ?? null
+    const nextTicketId = targetTicketId ?? fallbackTicketId
+    if (nextTicketId) {
+      setSelectedTicketId(nextTicketId)
+    }
+  }
 
   function openCreateModal() {
     setSubmitNotice('')
@@ -1505,13 +1560,6 @@ function App() {
                   New tickets waiting for staff review, assignment, or escalation.
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setActiveNav('ticket-management')}
-                className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-[#003366]"
-              >
-                Open Ticket Queue
-              </button>
             </div>
 
             <div className="mt-5 space-y-3">
@@ -1520,10 +1568,7 @@ function App() {
                   <button
                     key={ticket.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedTicketId(ticket.id)
-                      setActiveNav('ticket-management')
-                    }}
+                    onClick={() => openDispatchQueue(ticket.id)}
                     className="flex w-full items-start justify-between gap-4 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4 text-left transition hover:border-slate-300 hover:bg-white"
                   >
                     <div className="min-w-0">
@@ -2037,6 +2082,212 @@ function App() {
     )
   }
 
+  function renderAssigneeManagementPage() {
+    const assigneeWorkloadMap = activeAssignedTickets.reduce((workload, ticket) => {
+      const assignee = ticket.assignee || 'Unassigned'
+      workload[assignee] = (workload[assignee] || 0) + 1
+      return workload
+    }, {})
+
+    const assigneeInsights = filteredAssignees.map((assignee) => {
+      const totalTickets = tickets.filter((ticket) => ticket.assignee === assignee.username).length
+      const activeTickets = assigneeWorkloadMap[assignee.username] || 0
+      const openTickets = tickets.filter(
+        (ticket) =>
+          ticket.assignee === assignee.username &&
+          (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS'),
+      ).length
+
+      return {
+        ...assignee,
+        activeTickets,
+        openTickets,
+        totalTickets,
+      }
+    })
+
+    const busiestAssignee =
+      [...assigneeInsights].sort((left, right) => right.activeTickets - left.activeTickets)[0] ||
+      null
+
+    const openRoutedTickets = tickets.filter(
+      (ticket) => ticket.assignee && ticket.assignee !== 'Unassigned' && ticket.status === 'OPEN',
+    ).length
+
+    return (
+      <section className="mt-6 grid gap-6 2xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 lg:flex-row lg:items-start lg:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">Assignee management</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Monitor assignee accounts, current workload, and ticket routing pressure.
+              </p>
+            </div>
+            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003366] text-white">
+              <Users className="h-5 w-5" />
+            </div>
+          </div>
+
+          <div className="mt-6 grid gap-4 md:grid-cols-3">
+            <article className="rounded-3xl bg-slate-50 p-5">
+              <p className="text-sm font-semibold text-slate-900">Assignees</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                {assigneeUsers.length}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Total assignee accounts available for routing.
+              </p>
+            </article>
+
+            <article className="rounded-3xl bg-slate-50 p-5">
+              <p className="text-sm font-semibold text-slate-900">Open routed</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                {openRoutedTickets}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Tickets already assigned and still waiting on action.
+              </p>
+            </article>
+
+            <article className="rounded-3xl bg-slate-50 p-5">
+              <p className="text-sm font-semibold text-slate-900">Filtered results</p>
+              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                {assigneeInsights.length}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Results matching the current search query.
+              </p>
+            </article>
+          </div>
+
+          {busiestAssignee ? (
+            <div className="mt-6 rounded-3xl border border-[#003366]/10 bg-[#003366]/5 px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#003366]/70">
+                Current busiest assignee
+              </p>
+              <p className="mt-2 text-sm font-semibold text-slate-950">{busiestAssignee.username}</p>
+              <p className="mt-1 text-sm text-slate-600">
+                {busiestAssignee.activeTickets} active tickets, {busiestAssignee.openTickets} open tickets.
+              </p>
+            </div>
+          ) : null}
+
+          <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200/80">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-200 text-left">
+                <thead className="bg-slate-50">
+                  <tr>
+                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Assignee
+                    </th>
+                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Active
+                    </th>
+                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Open
+                    </th>
+                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Total
+                    </th>
+                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 bg-white">
+                  {isUsersLoading ? (
+                    <tr>
+                      <td className="px-5 py-6 text-sm text-slate-500" colSpan="5">
+                        Loading assignees...
+                      </td>
+                    </tr>
+                  ) : assigneeInsights.length ? (
+                    assigneeInsights.map((assignee) => (
+                      <tr key={assignee.id} className="align-top">
+                        <td className="px-5 py-4">
+                          <p className="text-sm font-semibold text-slate-950">{assignee.username}</p>
+                          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
+                            {assignee.email}
+                          </p>
+                        </td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{assignee.activeTickets}</td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{assignee.openTickets}</td>
+                        <td className="px-5 py-4 text-sm text-slate-600">{assignee.totalTickets}</td>
+                        <td className="px-5 py-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setQuery(assignee.username)
+                              setStatusFilter('ALL')
+                              setActiveNav('ticket-management')
+                              const firstTicket =
+                                tickets.find((ticket) => ticket.assignee === assignee.username) || null
+                              if (firstTicket) {
+                                setSelectedTicketId(firstTicket.id)
+                              }
+                            }}
+                            className="inline-flex h-9 items-center justify-center rounded-2xl border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-[#003366]"
+                          >
+                            View tickets
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td className="px-5 py-6 text-sm text-slate-500" colSpan="5">
+                        No assignees match the current search.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">Assignment summary</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                Operational load by assignee, based on tickets currently in the system.
+              </p>
+            </div>
+            <Users className="h-5 w-5 text-[#003366]" />
+          </div>
+
+          <div className="mt-6 space-y-3">
+            {assigneeWorkloadMap && Object.keys(assigneeWorkloadMap).length ? (
+              Object.entries(assigneeWorkloadMap)
+                .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
+                .slice(0, 6)
+                .map(([name, count]) => (
+                  <div key={name} className="flex items-center justify-between rounded-3xl bg-slate-50 px-4 py-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-950">{name}</p>
+                      <p className="mt-1 text-sm text-slate-500">Active assigned tickets</p>
+                    </div>
+                    <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-2xl bg-[#003366] px-3 text-sm font-semibold text-white">
+                      {count}
+                    </span>
+                  </div>
+                ))
+            ) : (
+              <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
+                <h3 className="text-lg font-semibold text-slate-900">No active load</h3>
+                <p className="mt-2 text-sm text-slate-500">
+                  Assign tickets to assignees to populate the workload summary.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   function renderCategoryManagementPage() {
     const editingCategory = categories.find((category) => category.id === editingCategoryId) ?? null
 
@@ -2045,9 +2296,9 @@ function App() {
         <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
           <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 lg:flex-row lg:items-start lg:justify-between">
             <div>
-              <h2 className="text-lg font-semibold text-slate-950">Category management</h2>
+              <h2 className="text-lg font-semibold text-slate-950">Department management</h2>
               <p className="mt-1 text-sm text-slate-500">
-                Manage support categories, department routing, service labels, locations, and response targets.
+                Manage support departments, routing, service labels, locations, and response targets.
               </p>
             </div>
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003366] text-white">
@@ -2057,12 +2308,12 @@ function App() {
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             <article className="rounded-3xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Categories</p>
+              <p className="text-sm font-semibold text-slate-900">Departments</p>
               <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
                 {categories.length}
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Total managed request categories available for routing.
+                Total managed departments available for routing.
               </p>
             </article>
 
@@ -2072,7 +2323,7 @@ function App() {
                 {new Set(categories.map((category) => category.department)).size}
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-500">
-                Distinct departments currently mapped to category routing.
+                Distinct departments currently mapped to routing.
               </p>
             </article>
 
@@ -2105,7 +2356,7 @@ function App() {
                 <thead className="bg-slate-50">
                   <tr>
                     <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Category
+                      Department
                     </th>
                     <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
                       Department
@@ -2125,7 +2376,7 @@ function App() {
                   {isCategoriesLoading ? (
                     <tr>
                       <td className="px-5 py-6 text-sm text-slate-500" colSpan="5">
-                        Loading categories...
+                        Loading departments...
                       </td>
                     </tr>
                   ) : filteredCategories.length ? (
@@ -2164,7 +2415,7 @@ function App() {
                   ) : (
                     <tr>
                       <td className="px-5 py-6 text-sm text-slate-500" colSpan="5">
-                        No categories match the current search.
+                        No departments match the current search.
                       </td>
                     </tr>
                   )}
@@ -2178,7 +2429,7 @@ function App() {
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-lg font-semibold text-slate-950">
-                {editingCategory ? `Edit ${editingCategory.name}` : 'Create category'}
+                {editingCategory ? `Edit ${editingCategory.name}` : 'Create department'}
               </h2>
               <p className="mt-1 text-sm text-slate-500">
                 Configure how ticket requests are routed and described across the system.
@@ -2196,7 +2447,7 @@ function App() {
           <form className="mt-6 space-y-5" onSubmit={handleCategorySubmit}>
             <div className="space-y-2">
               <label className="text-sm font-medium text-slate-700" htmlFor="category-name">
-                Category name
+                Department name
               </label>
               <input
                 id="category-name"
@@ -2301,7 +2552,7 @@ function App() {
                 Routing summary
               </p>
               <p className="mt-2 text-sm text-slate-600">
-                The category name appears in ticket forms. Department, service label, location, and response target are used across the public landing page and operations views.
+                The department name appears in ticket forms. Department, service label, location, and response target are used across the public landing page and operations views.
               </p>
             </div>
 
@@ -2324,7 +2575,7 @@ function App() {
                     : 'Creating...'
                   : editingCategoryId
                     ? 'Save Changes'
-                    : 'Create Category'}
+                    : 'Create Department'}
               </button>
             </div>
           </form>
@@ -2348,13 +2599,6 @@ function App() {
             View all tickets, assign the correct owner, and manage operational ticket handling from
             one queue.
           </p>
-          <button
-            type="button"
-            onClick={() => setActiveNav('ticket-management')}
-            className="mt-5 inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-[#003366]"
-          >
-            Open Ticket Queue
-          </button>
         </section>
       </>
     )
@@ -2380,7 +2624,7 @@ function App() {
         </article>
 
         <article className="rounded-3xl border border-slate-200/80 bg-slate-50 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">Available categories</h2>
+          <h2 className="text-lg font-semibold text-slate-950">Available departments</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             {categoryOptions.map((category) => (
               <div key={category} className="rounded-2xl bg-white px-4 py-4">
@@ -2504,7 +2748,7 @@ function App() {
                 <div className="grid gap-5 sm:grid-cols-2">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-slate-700" htmlFor="public-category">
-                      Category
+                      Department
                     </label>
                     <select
                       id="public-category"
@@ -2646,7 +2890,7 @@ function App() {
               </article>
 
               <article className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8">
-                <h2 className="text-lg font-semibold text-slate-950">Available categories</h2>
+                <h2 className="text-lg font-semibold text-slate-950">Available departments</h2>
                 <div className="mt-4 grid gap-3">
                   {categoryOptions.map((category) => (
                     <div key={category} className="rounded-2xl bg-slate-50 px-4 py-4">
@@ -2667,7 +2911,10 @@ function App() {
     if (activeNav === 'report-issue') return renderBasicAccessView()
     if (activeNav === 'assigned-tickets') return renderAssignedTicketsPage()
     if (activeNav === 'ticket-management') return renderManagementPage()
-    if (activeNav === 'category-management' && effectiveRole === 'ADMIN') {
+    if (activeNav === 'assignee-management' && isOperationsRole(effectiveRole)) {
+      return renderAssigneeManagementPage()
+    }
+    if (activeNav === 'category-management' && isOperationsRole(effectiveRole)) {
       return renderCategoryManagementPage()
     }
     if (activeNav === 'user-management' && effectiveRole === 'ADMIN') {
@@ -2755,7 +3002,7 @@ function App() {
               </article>
 
               <article className="rounded-3xl border border-slate-200/80 bg-slate-50 p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-950">Available categories</h2>
+                <h2 className="text-lg font-semibold text-slate-950">Available departments</h2>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {categoryOptions.map((category) => (
                     <div key={category} className="rounded-2xl bg-white px-4 py-4">
@@ -2872,7 +3119,7 @@ function App() {
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700" htmlFor="category">
-                  Category
+                  Department
                 </label>
                 <select
                   id="category"
@@ -2981,18 +3228,15 @@ function App() {
       <div className="mx-auto flex min-h-screen w-full max-w-[1680px] items-stretch">
         <Sidebar
           activeNav={activeNav}
-          currentRole={currentUser.role}
           isOpen={isSidebarOpen}
           items={navItems}
           onClose={() => setIsSidebarOpen(false)}
           onSelect={handleSelectNav}
-          onTemporaryRoleChange={handleTemporaryRoleChange}
           summary={{
             total,
             inProgress,
             resolved,
           }}
-          temporaryRole={temporaryRole}
         />
 
         <main className="min-w-0 flex-1 px-4 py-4 sm:px-6 lg:px-8 lg:py-6">

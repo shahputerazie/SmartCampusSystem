@@ -10,20 +10,18 @@ const iconMap = {
   'report-issue': TicketPlus,
   operations: LayoutDashboard,
   'ticket-management': Wrench,
+  'assignee-management': Users,
   'category-management': TicketPlus,
   'user-management': Users,
 }
 
 function Sidebar({
   activeNav,
-  currentRole,
   isOpen,
   items,
   onClose,
   onSelect,
-  onTemporaryRoleChange,
   summary,
-  temporaryRole,
 }) {
   return (
     <>
@@ -63,24 +61,6 @@ function Sidebar({
           <SidebarMetric label="Total" value={summary.total} />
           <SidebarMetric label="Active" value={summary.inProgress} />
           <SidebarMetric label="Done" value={summary.resolved} />
-        </div>
-
-        <div className="mb-6 rounded-3xl border border-white/10 bg-white/10 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-300">
-            Temporary Access
-          </p>
-          <select
-            value={temporaryRole || currentRole || 'ADMIN'}
-            onChange={(event) => onTemporaryRoleChange(event.target.value)}
-            className="mt-3 h-11 w-full rounded-2xl border border-white/15 bg-white/10 px-4 text-sm font-medium text-white outline-none transition focus:border-white/30"
-          >
-            <option value="ADMIN" className="text-slate-900">ADMIN</option>
-            <option value="STAFF" className="text-slate-900">STAFF</option>
-            <option value="ASSIGNEE" className="text-slate-900">ASSIGNEE</option>
-          </select>
-          <p className="mt-2 text-xs leading-5 text-slate-300">
-            Sidebar-only preview switch for testing access levels.
-          </p>
         </div>
 
         <nav className="space-y-2">

@@ -1,8 +1,8 @@
 -------------------------------------------------------------------------------
 Test set: com.umt.smartcampus.controllers.UserManagementControllerTest
 -------------------------------------------------------------------------------
-Tests run: 5, Failures: 0, Errors: 5, Skipped: 0, Time elapsed: 21.51 s <<< FAILURE! -- in com.umt.smartcampus.controllers.UserManagementControllerTest
-com.umt.smartcampus.controllers.UserManagementControllerTest.deleteUserPreventsAdminSelfDeletion -- Time elapsed: 21.49 s <<< ERROR!
+Tests run: 5, Failures: 0, Errors: 5, Skipped: 0, Time elapsed: 21.49 s <<< FAILURE! -- in com.umt.smartcampus.controllers.UserManagementControllerTest
+com.umt.smartcampus.controllers.UserManagementControllerTest.deleteUserPreventsAdminSelfDeletion -- Time elapsed: 21.47 s <<< ERROR!
 java.lang.IllegalStateException: Could not initialize plugin: interface org.mockito.plugins.MockMaker (alternate: null)
 	at org.mockito.internal.configuration.plugins.PluginLoader$1.invoke(PluginLoader.java:85)
 	at jdk.proxy2/jdk.proxy2.$Proxy25.isTypeMockable(Unknown Source)
@@ -67,7 +67,7 @@ Caused by: java.lang.IllegalStateException: Could not self-attach to current VM 
 	at org.mockito.internal.creation.bytebuddy.InlineDelegateByteBuddyMockMaker.<clinit>(InlineDelegateByteBuddyMockMaker.java:138)
 	... 14 more
 
-com.umt.smartcampus.controllers.UserManagementControllerTest.updateUserRevokesSessionsWhenRoleChanges -- Time elapsed: 0.008 s <<< ERROR!
+com.umt.smartcampus.controllers.UserManagementControllerTest.updateUserRevokesSessionsWhenRoleChanges -- Time elapsed: 0.005 s <<< ERROR!
 java.lang.IllegalStateException: Could not initialize plugin: interface org.mockito.plugins.MockMaker (alternate: null)
 	at org.mockito.internal.configuration.plugins.PluginLoader$1.invoke(PluginLoader.java:85)
 	at jdk.proxy2/jdk.proxy2.$Proxy25.isTypeMockable(Unknown Source)

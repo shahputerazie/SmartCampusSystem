@@ -1,7 +1,7 @@
 -------------------------------------------------------------------------------
 Test set: com.umt.smartcampus.controllers.AuthControllerTest
 -------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 3, Skipped: 0, Time elapsed: 0.006 s <<< FAILURE! -- in com.umt.smartcampus.controllers.AuthControllerTest
+Tests run: 3, Failures: 0, Errors: 3, Skipped: 0, Time elapsed: 0.005 s <<< FAILURE! -- in com.umt.smartcampus.controllers.AuthControllerTest
 com.umt.smartcampus.controllers.AuthControllerTest.loginReturnsTokenForValidCredentials -- Time elapsed: 0.001 s <<< ERROR!
 java.lang.IllegalStateException: Could not initialize plugin: interface org.mockito.plugins.MockMaker (alternate: null)
 	at org.mockito.internal.configuration.plugins.PluginLoader$1.invoke(PluginLoader.java:85)
@@ -132,7 +132,7 @@ Caused by: java.lang.IllegalStateException: Could not self-attach to current VM 
 	at org.mockito.internal.creation.bytebuddy.InlineDelegateByteBuddyMockMaker.<clinit>(InlineDelegateByteBuddyMockMaker.java:138)
 	... 14 more
 
-com.umt.smartcampus.controllers.AuthControllerTest.logoutReturnsUnauthorizedWhenBearerTokenMissing -- Time elapsed: 0.001 s <<< ERROR!
+com.umt.smartcampus.controllers.AuthControllerTest.logoutReturnsUnauthorizedWhenBearerTokenMissing -- Time elapsed: 0 s <<< ERROR!
 java.lang.IllegalStateException: Could not initialize plugin: interface org.mockito.plugins.MockMaker (alternate: null)
 	at org.mockito.internal.configuration.plugins.PluginLoader$1.invoke(PluginLoader.java:85)
 	at jdk.proxy2/jdk.proxy2.$Proxy25.isTypeMockable(Unknown Source)

@@ -22,11 +22,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/categories")
 @CrossOrigin(origins = "*")
 public class SupportCategoryController {
+    private static final Set<String> OPERATIONS_ROLES = Set.of("ADMIN", "STAFF");
 
     private final SupportCategoryRepository supportCategoryRepository;
     private final TicketRepository ticketRepository;
@@ -57,9 +59,9 @@ public class SupportCategoryController {
             @RequestBody SupportCategoryRequest categoryRequest,
             HttpServletRequest request
     ) {
-        requireAdmin(request);
+        requireOperationsUser(request);
 
-        String name = requireValue(categoryRequest.getName(), "Category name is required.");
+        String name = requireValue(categoryRequest.getName(), "Department name is required.");
         ensureUniqueName(name, null);
 
         SupportCategory category = new SupportCategory();
@@ -78,10 +80,10 @@ public class SupportCategoryController {
             @RequestBody SupportCategoryRequest categoryRequest,
             HttpServletRequest request
     ) {
-        requireAdmin(request);
+        requireOperationsUser(request);
         SupportCategory category = findCategory(categoryId);
 
-        String name = requireValue(categoryRequest.getName(), "Category name is required.");
+        String name = requireValue(categoryRequest.getName(), "Department name is required.");
         ensureUniqueName(name, categoryId);
 
         category.setName(name);
@@ -96,13 +98,13 @@ public class SupportCategoryController {
     @DeleteMapping("/{categoryId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteCategory(@PathVariable Long categoryId, HttpServletRequest request) {
-        requireAdmin(request);
+        requireOperationsUser(request);
         SupportCategory category = findCategory(categoryId);
 
         if (ticketRepository.countByCategoryIgnoreCase(category.getName()) > 0) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Cannot delete a category that is already used by existing tickets."
+                    "Cannot delete a department that is already used by existing tickets."
             );
         }
 
@@ -111,13 +113,13 @@ public class SupportCategoryController {
 
     private SupportCategory findCategory(Long categoryId) {
         return supportCategoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Category not found."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Department not found."));
     }
 
     private void ensureUniqueName(String name, Long currentCategoryId) {
         supportCategoryRepository.findByNameIgnoreCase(name).ifPresent(existingCategory -> {
             if (!existingCategory.getId().equals(currentCategoryId)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Category name is already in use.");
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Department name is already in use.");
             }
         });
     }
@@ -130,15 +132,15 @@ public class SupportCategoryController {
         return value.trim();
     }
 
-    private void requireAdmin(HttpServletRequest request) {
+    private void requireOperationsUser(HttpServletRequest request) {
         User user = (User) request.getAttribute(AuthInterceptor.AUTHENTICATED_USER);
         if (user == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required.");
         }
 
         String role = user.getRole() == null ? "" : user.getRole().trim().toUpperCase();
-        if (!"ADMIN".equals(role)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin access is required.");
+        if (!OPERATIONS_ROLES.contains(role)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin or staff access is required.");
         }
     }
 }

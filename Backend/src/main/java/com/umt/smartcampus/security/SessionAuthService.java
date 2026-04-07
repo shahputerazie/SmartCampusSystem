@@ -23,6 +23,7 @@ public class SessionAuthService {
     }
 
     public String createToken(User user) {
+        authSessionRepository.deleteSessionsWithMissingUsers();
         authSessionRepository.deleteByExpiresAtBefore(LocalDateTime.now());
 
         String token = UUID.randomUUID() + "." + UUID.randomUUID();
@@ -41,6 +42,7 @@ public class SessionAuthService {
             return Optional.empty();
         }
 
+        authSessionRepository.deleteSessionsWithMissingUsers();
         authSessionRepository.deleteByExpiresAtBefore(LocalDateTime.now());
 
         Optional<AuthSession> sessionOptional = authSessionRepository.findByTokenHash(hashToken(token));

@@ -20,7 +20,14 @@ public class DataSeeder {
     ) {
         return args -> {
             seedUser(userRepository, passwordService, "admin", "admin@umt.edu.my", "admin123", "ADMIN");
-            seedUser(userRepository, passwordService, "staff", "staff@umt.edu.my", "staff123", "STAFF");
+            seedUser(userRepository, passwordService, "Ahmad Faris", "ahmad.faris@umt.edu.my", "staff123", "STAFF");
+            seedUser(userRepository, passwordService, "Nur Aisyah", "nur.aisyah@umt.edu.my", "staffops123", "STAFF");
+            seedUser(userRepository, passwordService, "Muhammad Izzat", "muhammad.izzat@umt.edu.my", "staffops223", "STAFF");
+            seedUser(userRepository, passwordService, "Siti Hawa", "siti.hawa@umt.edu.my", "assignee123", "ASSIGNEE");
+            seedUser(userRepository, passwordService, "Aiman Hakim", "aiman.hakim@umt.edu.my", "assignee223", "ASSIGNEE");
+            seedUser(userRepository, passwordService, "Nur Amalina", "nur.amalina@umt.edu.my", "assignee323", "ASSIGNEE");
+            seedUser(userRepository, passwordService, "Faiz Danial", "faiz.danial@umt.edu.my", "assignee423", "ASSIGNEE");
+            seedUser(userRepository, passwordService, "Izz Syafiq", "izz.syafiq@umt.edu.my", "assignee523", "ASSIGNEE");
             seedCategory(
                     supportCategoryRepository,
                     "IT Support",
