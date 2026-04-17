@@ -1,5 +1,5 @@
+com/umt/smartcampus/DepartmentServiceApplication.class
 com/umt/smartcampus/config/DataSeeder.class
-com/umt/smartcampus/CategoryServiceApplication.class
 com/umt/smartcampus/controllers/SupportCategoryController.class
 com/umt/smartcampus/dto/SupportCategoryResponse.class
 com/umt/smartcampus/security/AuthenticatedUser.class

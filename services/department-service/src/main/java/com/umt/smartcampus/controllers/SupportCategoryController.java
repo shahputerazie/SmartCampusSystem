@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 @RestController
-@RequestMapping("/api/categories")
+@RequestMapping("/api/departments")
 @CrossOrigin(origins = "*")
 public class SupportCategoryController {
     private static final Set<String> OPERATIONS_ROLES = Set.of("ADMIN", "STAFF");

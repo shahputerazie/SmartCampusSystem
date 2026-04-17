@@ -25,7 +25,7 @@ const ASSIGNED_TICKETS_URL = `${API_BASE_URL}/api/tickets/assigned`
 const AUTH_URL = `${API_BASE_URL}/api/auth`
 const USER_API_URL = `${API_BASE_URL}/api/users`
 const ASSIGNEE_API_URL = `${API_BASE_URL}/api/users/assignees`
-const CATEGORY_API_URL = `${API_BASE_URL}/api/categories`
+const DEPARTMENT_API_URL = `${API_BASE_URL}/api/departments`
 const AUTH_STORAGE_KEY = 'scss-auth-token'
 
 const statusOptions = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']
@@ -418,7 +418,7 @@ function App() {
       setIsCategoriesLoading(true)
       setCategoriesError('')
 
-      const response = await fetch(CATEGORY_API_URL)
+      const response = await fetch(DEPARTMENT_API_URL)
       if (!response.ok) {
         throw new Error(`Failed to load departments: ${response.status}`)
       }
@@ -1159,7 +1159,7 @@ function App() {
       setCategoryNotice('')
 
       const response = await fetch(
-        editingCategoryId ? `${CATEGORY_API_URL}/${editingCategoryId}` : CATEGORY_API_URL,
+        editingCategoryId ? `${DEPARTMENT_API_URL}/${editingCategoryId}` : DEPARTMENT_API_URL,
         {
           method: editingCategoryId ? 'PUT' : 'POST',
           headers: {
@@ -1224,7 +1224,7 @@ function App() {
       setCategoriesError('')
       setCategoryNotice('')
 
-      const response = await fetch(`${CATEGORY_API_URL}/${category.id}`, {
+      const response = await fetch(`${DEPARTMENT_API_URL}/${category.id}`, {
         method: 'DELETE',
         headers: authHeaders(),
       })
@@ -2488,11 +2488,11 @@ function App() {
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700" htmlFor="category-service-label">
+                <label className="text-sm font-medium text-slate-700" htmlFor="department-service-label">
                   Service label
                 </label>
                 <input
-                  id="category-service-label"
+                  id="department-service-label"
                   type="text"
                   required
                   value={categoryForm.serviceLabel}

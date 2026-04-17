@@ -70,8 +70,8 @@ public class GatewayProxyController {
             return routes.getTicketBaseUrl();
         }
 
-        if (path.startsWith("/api/categories")) {
-            return routes.getCategoryBaseUrl();
+        if (path.startsWith("/api/departments")) {
+            return routes.getDepartmentBaseUrl();
         }
 
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Route not found.");
@@ -94,7 +94,7 @@ public class GatewayProxyController {
             return !("POST".equalsIgnoreCase(method) && "/api/tickets".equals(path));
         }
 
-        if (path.startsWith("/api/categories")) {
+        if (path.startsWith("/api/departments")) {
             return !"GET".equalsIgnoreCase(method);
         }
 

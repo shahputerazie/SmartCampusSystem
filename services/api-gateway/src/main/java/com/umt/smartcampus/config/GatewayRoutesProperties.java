@@ -7,7 +7,7 @@ public class GatewayRoutesProperties {
 
     private String identityBaseUrl = "http://localhost:8081";
     private String ticketBaseUrl = "http://localhost:8082";
-    private String categoryBaseUrl = "http://localhost:8083";
+    private String departmentBaseUrl = "http://localhost:8083";
 
     public String getIdentityBaseUrl() {
         return identityBaseUrl;
@@ -25,11 +25,11 @@ public class GatewayRoutesProperties {
         this.ticketBaseUrl = ticketBaseUrl;
     }
 
-    public String getCategoryBaseUrl() {
-        return categoryBaseUrl;
+    public String getDepartmentBaseUrl() {
+        return departmentBaseUrl;
     }
 
-    public void setCategoryBaseUrl(String categoryBaseUrl) {
-        this.categoryBaseUrl = categoryBaseUrl;
+    public void setDepartmentBaseUrl(String departmentBaseUrl) {
+        this.departmentBaseUrl = departmentBaseUrl;
     }
 }

@@ -7,7 +7,7 @@ The backend is currently a single Spring Boot deployable:
 - `AuthController` handles login/session endpoints (`/api/auth/*`).
 - `UserManagementController` handles user CRUD and role-based operations (`/api/users/*`).
 - `TicketController` handles tickets, assignment, status, and comments (`/api/tickets/*`).
-- `SupportCategoryController` handles support categories (`/api/categories/*`).
+- `SupportCategoryController` handles departments (`/api/departments/*`).
 
 This is a monolith with domain modules, not a service-oriented deployment.
 
@@ -35,19 +35,19 @@ Use these boundaries to reduce coupling and keep ownership clear:
   - Reads user identity/role from token claims or identity introspection.
   - Stores assignee as `assigneeUserId` (future), not free-text username.
 
-3. Category Service
-- Owns support category metadata.
+3. Department Service
+- Owns department metadata.
 - Endpoints:
-  - `/api/categories/*`
+  - `/api/departments/*`
 - Data ownership:
-  - `support_categories`
+  - `departments`
 
 4. API Gateway (edge)
 - Single public entry point for frontend.
 - Performs route dispatch:
   - `/api/auth`, `/api/users` -> Identity Service
   - `/api/tickets` -> Ticket Service
-  - `/api/categories` -> Category Service
+  - `/api/departments` -> Department Service
 - Can centralize CORS, rate limits, and request tracing.
 
 ## Migration strategy (strangler pattern)
@@ -58,11 +58,11 @@ Use these boundaries to reduce coupling and keep ownership clear:
 2. Add gateway in front of monolith (all routes still point to monolith initially).
 3. Keep frontend pointing to one base URL (`VITE_API_BASE_URL`) so service moves are transparent.
 
-### Phase 2: Extract Category Service first
+### Phase 2: Extract Department Service first
 
-1. Move category model/repository/controller into a new Spring Boot app.
-2. Give Category Service its own database schema.
-3. Switch gateway route `/api/categories` from monolith to Category Service.
+1. Move department model/repository/controller into a new Spring Boot app.
+2. Give Department Service its own database schema.
+3. Switch gateway route `/api/departments` from monolith to Department Service.
 4. Keep old monolith endpoint temporarily disabled or read-only for safety.
 
 Why first: low coupling and low auth complexity.
@@ -102,8 +102,8 @@ Why first: low coupling and low auth complexity.
 
 ## Minimal technical backlog
 
-1. Create `identity-service`, `ticket-service`, and `category-service` Spring Boot projects.
+1. Create `identity-service`, `ticket-service`, and `department-service` Spring Boot projects.
 2. Introduce API gateway config and local compose stack.
-3. Move category domain first and verify no frontend changes required.
+3. Move department domain first and verify no frontend changes required.
 4. Move ticket domain and replace username-based assignee with stable user ID.
 5. Move auth/user domain last and retire monolith.

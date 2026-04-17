@@ -10,9 +10,9 @@
     </parent>
 
     <groupId>com.umt</groupId>
-    <artifactId>category-service</artifactId>
+    <artifactId>department-service</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>category-service</name>
+    <name>department-service</name>
 
     <properties>
         <java.version>17</java.version>
