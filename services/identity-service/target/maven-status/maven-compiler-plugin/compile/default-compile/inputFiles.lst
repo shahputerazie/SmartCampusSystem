@@ -1,0 +1,17 @@
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/IdentityServiceApplication.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/config/DataSeeder.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/config/WebConfig.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/controllers/AuthController.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/controllers/UserManagementController.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/dto/AuthResponse.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/dto/LoginRequest.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/dto/UserManagementRequest.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/dto/UserResponse.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/dto/UserSummaryResponse.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/models/AuthSession.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/models/User.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/repositories/AuthSessionRepository.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/repositories/UserRepository.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/security/AuthInterceptor.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/security/PasswordService.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/identity-service/src/main/java/com/umt/smartcampus/security/SessionAuthService.java

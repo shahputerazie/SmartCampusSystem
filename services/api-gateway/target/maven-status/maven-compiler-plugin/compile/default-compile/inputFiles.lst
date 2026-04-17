@@ -1,0 +1,5 @@
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/api-gateway/src/main/java/com/umt/smartcampus/ApiGatewayApplication.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/api-gateway/src/main/java/com/umt/smartcampus/config/GatewayConfig.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/api-gateway/src/main/java/com/umt/smartcampus/config/GatewayRoutesProperties.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/api-gateway/src/main/java/com/umt/smartcampus/controllers/GatewayProxyController.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/api-gateway/src/main/java/com/umt/smartcampus/service/IdentityEnrichmentService.java

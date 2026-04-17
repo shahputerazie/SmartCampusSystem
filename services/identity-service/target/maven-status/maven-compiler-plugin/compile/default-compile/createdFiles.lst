@@ -1,0 +1,17 @@
+com/umt/smartcampus/IdentityServiceApplication.class
+com/umt/smartcampus/dto/AuthResponse.class
+com/umt/smartcampus/dto/UserManagementRequest.class
+com/umt/smartcampus/security/SessionAuthService.class
+com/umt/smartcampus/dto/LoginRequest.class
+com/umt/smartcampus/models/AuthSession.class
+com/umt/smartcampus/dto/UserResponse.class
+com/umt/smartcampus/security/AuthInterceptor.class
+com/umt/smartcampus/repositories/UserRepository.class
+com/umt/smartcampus/dto/UserSummaryResponse.class
+com/umt/smartcampus/config/WebConfig.class
+com/umt/smartcampus/repositories/AuthSessionRepository.class
+com/umt/smartcampus/config/DataSeeder.class
+com/umt/smartcampus/controllers/UserManagementController.class
+com/umt/smartcampus/controllers/AuthController.class
+com/umt/smartcampus/models/User.class
+com/umt/smartcampus/security/PasswordService.class

@@ -1,0 +1,6 @@
+com/umt/smartcampus/config/GatewayConfig.class
+com/umt/smartcampus/service/IdentityEnrichmentService.class
+com/umt/smartcampus/config/GatewayRoutesProperties.class
+com/umt/smartcampus/ApiGatewayApplication.class
+com/umt/smartcampus/config/GatewayConfig$1.class
+com/umt/smartcampus/controllers/GatewayProxyController.class

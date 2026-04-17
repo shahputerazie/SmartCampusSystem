@@ -19,12 +19,13 @@ import {
 import Sidebar from './components/Sidebar'
 import TicketTable from './components/TicketTable'
 
-const API_URL = 'http://localhost:8080/api/tickets'
-const ASSIGNED_TICKETS_URL = 'http://localhost:8080/api/tickets/assigned'
-const AUTH_URL = 'http://localhost:8080/api/auth'
-const USER_API_URL = 'http://localhost:8080/api/users'
-const ASSIGNEE_API_URL = 'http://localhost:8080/api/users/assignees'
-const CATEGORY_API_URL = 'http://localhost:8080/api/categories'
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '')
+const API_URL = `${API_BASE_URL}/api/tickets`
+const ASSIGNED_TICKETS_URL = `${API_BASE_URL}/api/tickets/assigned`
+const AUTH_URL = `${API_BASE_URL}/api/auth`
+const USER_API_URL = `${API_BASE_URL}/api/users`
+const ASSIGNEE_API_URL = `${API_BASE_URL}/api/users/assignees`
+const CATEGORY_API_URL = `${API_BASE_URL}/api/categories`
 const AUTH_STORAGE_KEY = 'scss-auth-token'
 
 const statusOptions = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED']
