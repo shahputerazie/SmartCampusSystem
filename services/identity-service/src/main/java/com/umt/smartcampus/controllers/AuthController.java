@@ -21,7 +21,7 @@ import java.util.Set;
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-    private static final Set<String> ALLOWED_ROLES = Set.of("ADMIN", "STAFF", "ASSIGNEE");
+    private static final Set<String> ALLOWED_ROLES = Set.of("ADMIN", "STAFF", "ASSIGNEE", "SECURITY");
 
     private final UserRepository userRepository;
     private final PasswordService passwordService;

@@ -8,6 +8,7 @@ public class GatewayRoutesProperties {
     private String identityBaseUrl = "http://localhost:8081";
     private String ticketBaseUrl = "http://localhost:8082";
     private String departmentBaseUrl = "http://localhost:8083";
+    private String lostFoundBaseUrl = "http://localhost:8084";
 
     public String getIdentityBaseUrl() {
         return identityBaseUrl;
@@ -31,5 +32,13 @@ public class GatewayRoutesProperties {
 
     public void setDepartmentBaseUrl(String departmentBaseUrl) {
         this.departmentBaseUrl = departmentBaseUrl;
+    }
+
+    public String getLostFoundBaseUrl() {
+        return lostFoundBaseUrl;
+    }
+
+    public void setLostFoundBaseUrl(String lostFoundBaseUrl) {
+        this.lostFoundBaseUrl = lostFoundBaseUrl;
     }
 }

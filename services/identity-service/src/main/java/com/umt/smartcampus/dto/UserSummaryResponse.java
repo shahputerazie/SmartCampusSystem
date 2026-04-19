@@ -10,4 +10,5 @@ public class UserSummaryResponse {
     private long admins;
     private long staff;
     private long assignees;
+    private long security;
 }

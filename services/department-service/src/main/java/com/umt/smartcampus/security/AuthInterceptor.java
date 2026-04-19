@@ -2,6 +2,7 @@ package com.umt.smartcampus.security;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
@@ -10,6 +11,13 @@ import org.springframework.web.servlet.HandlerInterceptor;
 public class AuthInterceptor implements HandlerInterceptor {
 
     public static final String AUTHENTICATED_USER = "authenticatedUser";
+    private static final String INTERNAL_GATEWAY_KEY_HEADER = "X-Internal-Gateway-Key";
+
+    private final String gatewaySharedKey;
+
+    public AuthInterceptor(@Value("${security.gateway-shared-key:}") String gatewaySharedKey) {
+        this.gatewaySharedKey = gatewaySharedKey == null ? "" : gatewaySharedKey.trim();
+    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -19,6 +27,14 @@ public class AuthInterceptor implements HandlerInterceptor {
 
         if (HttpMethod.GET.matches(request.getMethod())) {
             return true;
+        }
+
+        if (!gatewaySharedKey.isBlank()) {
+            String inboundGatewayKey = request.getHeader(INTERNAL_GATEWAY_KEY_HEADER);
+            if (!gatewaySharedKey.equals(inboundGatewayKey)) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Gateway authorization is required.");
+                return false;
+            }
         }
 
         String userIdHeader = request.getHeader("X-User-Id");

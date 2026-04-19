@@ -7,13 +7,12 @@ import com.umt.smartcampus.dto.TicketResponse;
 import com.umt.smartcampus.dto.TicketStatusUpdateRequest;
 import com.umt.smartcampus.dto.TicketSummaryResponse;
 import com.umt.smartcampus.models.Comment;
-import com.umt.smartcampus.models.SupportCategory;
 import com.umt.smartcampus.models.Ticket;
 import com.umt.smartcampus.repositories.CommentRepository;
-import com.umt.smartcampus.repositories.SupportCategoryRepository;
 import com.umt.smartcampus.repositories.TicketRepository;
 import com.umt.smartcampus.security.AuthenticatedUser;
 import com.umt.smartcampus.security.AuthInterceptor;
+import com.umt.smartcampus.service.DepartmentCatalogClient;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -33,16 +32,16 @@ public class TicketController {
 
     private final TicketRepository ticketRepository;
     private final CommentRepository commentRepository;
-    private final SupportCategoryRepository supportCategoryRepository;
+    private final DepartmentCatalogClient departmentCatalogClient;
 
     public TicketController(
             TicketRepository ticketRepository,
             CommentRepository commentRepository,
-            SupportCategoryRepository supportCategoryRepository
+            DepartmentCatalogClient departmentCatalogClient
     ) {
         this.ticketRepository = ticketRepository;
         this.commentRepository = commentRepository;
-        this.supportCategoryRepository = supportCategoryRepository;
+        this.departmentCatalogClient = departmentCatalogClient;
     }
 
     // 1. GET ALL TICKETS (To show on the dashboard)
@@ -68,12 +67,12 @@ public class TicketController {
     public TicketResponse createTicket(@RequestBody Ticket ticket, HttpServletRequest request) {
         AuthenticatedUser authenticatedUser = getOptionalAuthenticatedUser(request);
         validateTicket(ticket);
-        SupportCategory supportCategory = findSupportCategory(ticket.getCategory());
+        DepartmentCatalogClient.DepartmentCategory supportCategory = findSupportCategory(ticket.getCategory());
 
         ticket.setStatus(normalizeStatus(ticket.getStatus()));
-        ticket.setCategory(supportCategory.getName());
+        ticket.setCategory(supportCategory.name());
         ticket.setAssignee(ticket.getAssignee() == null || ticket.getAssignee().isBlank() ? null : ticket.getAssignee().trim());
-        ticket.setLocation(defaultIfBlank(ticket.getLocation(), supportCategory.getDefaultLocation()));
+        ticket.setLocation(defaultIfBlank(ticket.getLocation(), supportCategory.defaultLocation()));
         ticket.setRequesterName(resolveRequesterName(ticket, authenticatedUser));
         ticket.setRequesterEmail(resolveRequesterEmail(ticket, authenticatedUser));
 
@@ -263,8 +262,8 @@ public class TicketController {
         return TicketResponse.from(ticket, commentRepository.findByTicketIdOrderByCreatedAtDesc(ticket.getId()));
     }
 
-    private SupportCategory findSupportCategory(String categoryName) {
-        return supportCategoryRepository.findByNameIgnoreCase(categoryName == null ? "" : categoryName.trim())
+    private DepartmentCatalogClient.DepartmentCategory findSupportCategory(String categoryName) {
+        return departmentCatalogClient.findByName(categoryName)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Selected category does not exist."));
     }
 

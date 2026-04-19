@@ -1,0 +1,114 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: smartcampus-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: admin
+      MYSQL_DATABASE: smartcampus_identity
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./services/docker/mysql/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-padmin"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  identity-service:
+    build:
+      context: ./services/identity-service
+    container_name: smartcampus-identity-service
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/smartcampus_identity
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: admin
+    ports:
+      - "8081:8081"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  ticket-service:
+    build:
+      context: ./services/ticket-service
+    container_name: smartcampus-ticket-service
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/smartcampus_ticket
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: admin
+      SERVICES_DEPARTMENT_BASE_URL: http://department-service:8083
+      SECURITY_GATEWAY_SHARED_KEY: smartcampus-internal-gateway-key
+    ports:
+      - "8082:8082"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  department-service:
+    build:
+      context: ./services/department-service
+    container_name: smartcampus-department-service
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/smartcampus_department
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: admin
+      SECURITY_GATEWAY_SHARED_KEY: smartcampus-internal-gateway-key
+    ports:
+      - "8083:8083"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  lost-found-service:
+    build:
+      context: ./services/lost-found-service
+    container_name: smartcampus-lost-found-service
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/smartcampus_lostfound
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: admin
+      SECURITY_GATEWAY_SHARED_KEY: smartcampus-internal-gateway-key
+    ports:
+      - "8084:8084"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./services/api-gateway
+    container_name: smartcampus-api-gateway
+    restart: unless-stopped
+    environment:
+      GATEWAY_ROUTES_IDENTITY_BASE_URL: http://identity-service:8081
+      GATEWAY_ROUTES_TICKET_BASE_URL: http://ticket-service:8082
+      GATEWAY_ROUTES_DEPARTMENT_BASE_URL: http://department-service:8083
+      GATEWAY_ROUTES_LOST_FOUND_BASE_URL: http://lost-found-service:8084
+      GATEWAY_SECURITY_SHARED_KEY: smartcampus-internal-gateway-key
+    ports:
+      - "8080:8080"
+    depends_on:
+      - identity-service
+      - ticket-service
+      - department-service
+      - lost-found-service
+
+  frontend:
+    build:
+      context: ./Frontend
+    container_name: smartcampus-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api-gateway
+
+volumes:
+  mysql_data:

@@ -22,6 +22,7 @@ public class DataSeeder {
             seedUser(userRepository, passwordService, "Nur Amalina", "nur.amalina@umt.edu.my", "assignee323", "ASSIGNEE");
             seedUser(userRepository, passwordService, "Faiz Danial", "faiz.danial@umt.edu.my", "assignee423", "ASSIGNEE");
             seedUser(userRepository, passwordService, "Izz Syafiq", "izz.syafiq@umt.edu.my", "assignee523", "ASSIGNEE");
+            seedUser(userRepository, passwordService, "Guard Harith", "harith.security@umt.edu.my", "security123", "SECURITY");
         };
     }
 

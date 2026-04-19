@@ -3,6 +3,7 @@ package com.umt.smartcampus.controllers;
 import com.umt.smartcampus.config.GatewayRoutesProperties;
 import com.umt.smartcampus.service.IdentityEnrichmentService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,18 +23,27 @@ import java.util.Map;
 @RestController
 public class GatewayProxyController {
 
+    private static final String HEADER_USER_ID = "X-User-Id";
+    private static final String HEADER_USERNAME = "X-Username";
+    private static final String HEADER_EMAIL = "X-Email";
+    private static final String HEADER_ROLE = "X-Role";
+    private static final String HEADER_INTERNAL_GATEWAY_KEY = "X-Internal-Gateway-Key";
+
     private final HttpClient httpClient;
     private final GatewayRoutesProperties routes;
     private final IdentityEnrichmentService identityEnrichmentService;
+    private final String gatewaySharedKey;
 
     public GatewayProxyController(
             HttpClient httpClient,
             GatewayRoutesProperties routes,
-            IdentityEnrichmentService identityEnrichmentService
+            IdentityEnrichmentService identityEnrichmentService,
+            @Value("${gateway.security.shared-key:}") String gatewaySharedKey
     ) {
         this.httpClient = httpClient;
         this.routes = routes;
         this.identityEnrichmentService = identityEnrichmentService;
+        this.gatewaySharedKey = gatewaySharedKey == null ? "" : gatewaySharedKey.trim();
     }
 
     @RequestMapping("/api/**")
@@ -74,6 +84,10 @@ public class GatewayProxyController {
             return routes.getDepartmentBaseUrl();
         }
 
+        if (path.startsWith("/api/lost-found")) {
+            return routes.getLostFoundBaseUrl();
+        }
+
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Route not found.");
     }
 
@@ -85,6 +99,10 @@ public class GatewayProxyController {
         String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
         Map<String, String> headers = identityEnrichmentService.getForwardHeaders(authorization);
         headers.forEach(outboundBuilder::header);
+
+        if (!gatewaySharedKey.isBlank()) {
+            outboundBuilder.header(HEADER_INTERNAL_GATEWAY_KEY, gatewaySharedKey);
+        }
     }
 
     private boolean requiresIdentityEnrichment(HttpServletRequest request, String path) {
@@ -96,6 +114,10 @@ public class GatewayProxyController {
 
         if (path.startsWith("/api/departments")) {
             return !"GET".equalsIgnoreCase(method);
+        }
+
+        if (path.startsWith("/api/lost-found")) {
+            return true;
         }
 
         return false;
@@ -125,7 +147,14 @@ public class GatewayProxyController {
             }
 
             String lowerName = name.toLowerCase();
-            if ("host".equals(lowerName) || "content-length".equals(lowerName) || "connection".equals(lowerName)) {
+            if ("host".equals(lowerName)
+                    || "content-length".equals(lowerName)
+                    || "connection".equals(lowerName)
+                    || HEADER_USER_ID.toLowerCase().equals(lowerName)
+                    || HEADER_USERNAME.toLowerCase().equals(lowerName)
+                    || HEADER_EMAIL.toLowerCase().equals(lowerName)
+                    || HEADER_ROLE.toLowerCase().equals(lowerName)
+                    || HEADER_INTERNAL_GATEWAY_KEY.toLowerCase().equals(lowerName)) {
                 continue;
             }
 

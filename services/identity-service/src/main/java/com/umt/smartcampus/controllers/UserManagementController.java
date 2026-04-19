@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 @CrossOrigin(origins = "*")
 public class UserManagementController {
 
-    private static final Set<String> VALID_ROLES = Set.of("ADMIN", "STAFF", "ASSIGNEE");
+    private static final Set<String> VALID_ROLES = Set.of("ADMIN", "STAFF", "ASSIGNEE", "SECURITY");
     private static final List<String> OPERATIONS_ROLES = List.of("ADMIN", "STAFF");
     private static final Pattern EMAIL_PATTERN =
             Pattern.compile("^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$", Pattern.CASE_INSENSITIVE);
@@ -58,7 +58,7 @@ public class UserManagementController {
     @GetMapping("/roles")
     public List<String> getAvailableRoles(HttpServletRequest request) {
         requireAdmin(request);
-        return Arrays.asList("ADMIN", "STAFF", "ASSIGNEE");
+        return Arrays.asList("ADMIN", "STAFF", "ASSIGNEE", "SECURITY");
     }
 
     @GetMapping("/summary")
@@ -68,7 +68,8 @@ public class UserManagementController {
                 userRepository.count(),
                 userRepository.countByRole("ADMIN"),
                 userRepository.countByRole("STAFF"),
-                userRepository.countByRole("ASSIGNEE")
+                userRepository.countByRole("ASSIGNEE"),
+                userRepository.countByRole("SECURITY")
         );
     }
 

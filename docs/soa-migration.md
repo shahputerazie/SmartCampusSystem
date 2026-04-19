@@ -42,12 +42,23 @@ Use these boundaries to reduce coupling and keep ownership clear:
 - Data ownership:
   - `departments`
 
-4. API Gateway (edge)
+4. Lost & Found Service
+- Owns lost item reports, found item registry, and claim verification workflow.
+- Endpoints:
+  - `/api/lost-found/*`
+- Data ownership:
+  - `lost_item_reports`
+  - `found_item_records`
+- Integration:
+  - Triggers notification workflow when potential matches are detected.
+
+5. API Gateway (edge)
 - Single public entry point for frontend.
 - Performs route dispatch:
   - `/api/auth`, `/api/users` -> Identity Service
   - `/api/tickets` -> Ticket Service
   - `/api/departments` -> Department Service
+  - `/api/lost-found` -> Lost & Found Service
 - Can centralize CORS, rate limits, and request tracing.
 
 ## Migration strategy (strangler pattern)

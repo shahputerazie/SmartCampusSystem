@@ -6,6 +6,35 @@ This directory contains extracted backend services from the original monolith:
 - `identity-service` (port `8081`): `/api/auth/*`, `/api/users/*`
 - `ticket-service` (port `8082`): `/api/tickets/*`
 - `department-service` (port `8083`): `/api/departments/*`
+- `lost-found-service` (port `8084`): `/api/lost-found/*`
+
+## Run everything with Docker Compose
+
+From the repository root:
+
+```bash
+docker compose up --build
+```
+
+This starts:
+
+- MySQL (`3307` on host -> `3306` in container) with databases:
+  - `smartcampus_identity`
+  - `smartcampus_ticket`
+  - `smartcampus_department`
+  - `smartcampus_lostfound`
+- `identity-service` (`8081`)
+- `ticket-service` (`8082`)
+- `department-service` (`8083`)
+- `lost-found-service` (`8084`)
+- `api-gateway` (`8080`)
+- `frontend` (`5173`)
+
+To stop:
+
+```bash
+docker compose down
+```
 
 ## Run each service
 
@@ -13,6 +42,7 @@ This directory contains extracted backend services from the original monolith:
 cd services/identity-service && mvn spring-boot:run
 cd services/ticket-service && mvn spring-boot:run
 cd services/department-service && mvn spring-boot:run
+cd services/lost-found-service && mvn spring-boot:run
 cd services/api-gateway && mvn spring-boot:run
 ```
 
@@ -23,6 +53,7 @@ cd services/api-gateway && mvn spring-boot:run
 - `/api/auth/*` and `/api/users/*` -> identity service
 - `/api/tickets/*` -> ticket service
 - `/api/departments/*` -> department service
+- `/api/lost-found/*` -> lost & found service
 
 For protected ticket/department routes, the gateway verifies `Authorization: Bearer ...` against identity service (`/api/auth/me`) and injects internal user headers automatically.
 
