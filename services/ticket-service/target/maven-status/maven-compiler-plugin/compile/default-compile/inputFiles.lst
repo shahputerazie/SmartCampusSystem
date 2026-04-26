@@ -1,4 +1,5 @@
 /Users/shahputeraiskandar/Sites/SmartCampusSystem/services/ticket-service/src/main/java/com/umt/smartcampus/TicketServiceApplication.java
+/Users/shahputeraiskandar/Sites/SmartCampusSystem/services/ticket-service/src/main/java/com/umt/smartcampus/config/DataSeeder.java
 /Users/shahputeraiskandar/Sites/SmartCampusSystem/services/ticket-service/src/main/java/com/umt/smartcampus/config/ServiceClientConfig.java
 /Users/shahputeraiskandar/Sites/SmartCampusSystem/services/ticket-service/src/main/java/com/umt/smartcampus/config/WebConfig.java
 /Users/shahputeraiskandar/Sites/SmartCampusSystem/services/ticket-service/src/main/java/com/umt/smartcampus/controllers/TicketController.java

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
   CheckCircle2,
@@ -98,8 +98,6 @@ const fallbackCategoryMeta = {
     sla: '6 hours',
   },
 }
-
-const fallbackCategoryOptions = Object.keys(fallbackCategoryMeta)
 
 const commentTemplates = {
   OPEN: [
@@ -213,7 +211,7 @@ function buildComments(status, assignee) {
   }))
 }
 
-function enrichTicket(ticket, index = 0, categoryDirectory = fallbackCategoryMeta) {
+function enrichTicket(ticket, categoryDirectory = fallbackCategoryMeta) {
   const meta = categoryDirectory[ticket.category] || fallbackCategoryMeta['Facilities']
   const assignee = ticket.assignee || 'Unassigned'
   const status = ticket.status || 'OPEN'
@@ -238,6 +236,14 @@ function enrichTicket(ticket, index = 0, categoryDirectory = fallbackCategoryMet
 
 function notifyAction(message) {
   window.alert(message)
+}
+
+function matchesQuery(values, normalizedQuery) {
+  if (!normalizedQuery) {
+    return true
+  }
+
+  return values.some((value) => String(value ?? '').toLowerCase().includes(normalizedQuery))
 }
 
 function App() {
@@ -285,30 +291,41 @@ function App() {
 
   const effectiveRole = temporaryRole || currentUser?.role || ''
 
-  const navItems =
-    effectiveRole === 'ADMIN'
-      ? [...staffNavItems, ...adminOnlyNavItems]
-      : effectiveRole === 'STAFF'
-        ? staffNavItems
-        : effectiveRole === 'ASSIGNEE'
-          ? assigneeNavItems
-      : basicAccessNavItems
+  const navItems = useMemo(() => {
+    if (effectiveRole === 'ADMIN') {
+      return [...staffNavItems, ...adminOnlyNavItems]
+    }
 
-  const categoryMeta = categories.length
-    ? Object.fromEntries(
-        categories.map((category) => [
-          category.name,
-          {
-            department: category.department,
-            assignees: fallbackCategoryMeta[category.name]?.assignees || [],
-            serviceLabel: category.serviceLabel,
-            location: category.defaultLocation,
-            sla: category.responseTarget,
-          },
-        ]),
-      )
-    : fallbackCategoryMeta
-  const categoryOptions = Object.keys(categoryMeta)
+    if (effectiveRole === 'STAFF') {
+      return staffNavItems
+    }
+
+    if (effectiveRole === 'ASSIGNEE') {
+      return assigneeNavItems
+    }
+
+    return basicAccessNavItems
+  }, [effectiveRole])
+
+  const categoryMeta = useMemo(
+    () =>
+      categories.length
+        ? Object.fromEntries(
+            categories.map((category) => [
+              category.name,
+              {
+                department: category.department,
+                assignees: fallbackCategoryMeta[category.name]?.assignees || [],
+                serviceLabel: category.serviceLabel,
+                location: category.defaultLocation,
+                sla: category.responseTarget,
+              },
+            ]),
+          )
+        : fallbackCategoryMeta,
+    [categories],
+  )
+  const categoryOptions = useMemo(() => Object.keys(categoryMeta), [categoryMeta])
 
   useEffect(() => {
     void fetchCategories()
@@ -400,9 +417,7 @@ function App() {
       return
     }
 
-    setTickets((currentTickets) =>
-      currentTickets.map((ticket, index) => enrichTicket(ticket, index, categoryMeta)),
-    )
+    setTickets((currentTickets) => currentTickets.map((ticket) => enrichTicket(ticket, categoryMeta)))
   }, [categories])
 
   useEffect(() => {
@@ -430,46 +445,6 @@ function App() {
       setCategoriesError(categoryError.message || 'Unable to load departments.')
     } finally {
       setIsCategoriesLoading(false)
-    }
-  }
-
-  async function fetchTickets() {
-    try {
-      setIsLoading(true)
-      setError('')
-      setIsDemoMode(false)
-
-      const response = await fetch(API_URL, {
-        headers: authHeaders(),
-      })
-      if (!response.ok) {
-        if (response.status === 401) {
-          handleUnauthorized('Your session has expired. Please log in again.')
-          return
-        }
-        throw new Error(`Failed to fetch tickets: ${response.status}`)
-      }
-
-      const data = await response.json()
-      const normalizedTickets = (Array.isArray(data) ? data : []).map((ticket, index) =>
-        enrichTicket(ticket, index, categoryMeta),
-      )
-
-      const availableTickets = normalizedTickets.length
-        ? normalizedTickets
-        : demoTickets.map((ticket, index) => enrichTicket(ticket, index, categoryMeta))
-
-      setTickets(availableTickets)
-      setSelectedTicketId(availableTickets[0]?.id ?? null)
-      setIsDemoMode(!normalizedTickets.length)
-    } catch (fetchError) {
-      const fallbackTickets = demoTickets.map((ticket, index) => enrichTicket(ticket, index, categoryMeta))
-      setTickets(fallbackTickets)
-      setSelectedTicketId(fallbackTickets[0]?.id ?? null)
-      setIsDemoMode(true)
-      setError(fetchError.message || 'Unable to load tickets.')
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -559,7 +534,7 @@ function App() {
         throw new Error(`Failed to create ticket: ${response.status}`)
       }
 
-      const createdTicket = enrichTicket(await response.json(), 0, categoryMeta)
+      const createdTicket = enrichTicket(await response.json(), categoryMeta)
 
       if (isOperationsRole(currentUser?.role)) {
         setTickets((currentTickets) => [createdTicket, ...currentTickets])
@@ -580,7 +555,6 @@ function App() {
           ...payload,
           createdAt: new Date().toISOString(),
         },
-        0,
         categoryMeta,
       )
 
@@ -604,7 +578,7 @@ function App() {
   }
 
   function upsertTicket(ticket) {
-    const normalizedTicket = enrichTicket(ticket, 0, categoryMeta)
+    const normalizedTicket = enrichTicket(ticket, categoryMeta)
 
     setTickets((currentTickets) => {
       const exists = currentTickets.some((currentTicket) => currentTicket.id === normalizedTicket.id)
@@ -873,19 +847,19 @@ function App() {
       }
 
       const data = await response.json()
-      const normalizedTickets = (Array.isArray(data) ? data : []).map((ticket, index) =>
-        enrichTicket(ticket, index, categoryMeta),
+      const normalizedTickets = (Array.isArray(data) ? data : []).map((ticket) =>
+        enrichTicket(ticket, categoryMeta),
       )
 
       const availableTickets = normalizedTickets.length
         ? normalizedTickets
-        : demoTickets.map((ticket, index) => enrichTicket(ticket, index, categoryMeta))
+        : demoTickets.map((ticket) => enrichTicket(ticket, categoryMeta))
 
       setTickets(availableTickets)
       setSelectedTicketId(availableTickets[0]?.id ?? null)
       setIsDemoMode(!normalizedTickets.length)
     } catch (fetchError) {
-      const fallbackTickets = demoTickets.map((ticket, index) => enrichTicket(ticket, index, categoryMeta))
+      const fallbackTickets = demoTickets.map((ticket) => enrichTicket(ticket, categoryMeta))
       setTickets(fallbackTickets)
       setSelectedTicketId(fallbackTickets[0]?.id ?? null)
       setIsDemoMode(true)
@@ -917,8 +891,8 @@ function App() {
       }
 
       const data = await response.json()
-      const normalizedTickets = (Array.isArray(data) ? data : []).map((ticket, index) =>
-        enrichTicket(ticket, index, categoryMeta),
+      const normalizedTickets = (Array.isArray(data) ? data : []).map((ticket) =>
+        enrichTicket(ticket, categoryMeta),
       )
 
       setTickets(normalizedTickets)
@@ -1276,112 +1250,225 @@ function App() {
     }
   }
 
-  const normalizedQuery = query.trim().toLowerCase()
+  const normalizedQuery = useMemo(() => query.trim().toLowerCase(), [query])
 
-  const filteredTickets = tickets.filter((ticket) => {
-    const matchesStatus = statusFilter === 'ALL' || ticket.status === statusFilter
-    const searchable = [
-      `SCSS-${ticket.id ?? 'NEW'}`,
-      ticket.title ?? '',
-      ticket.category ?? '',
-      ticket.status ?? '',
-      ticket.department ?? '',
-      ticket.assignee ?? '',
-      ticket.location ?? '',
-    ]
-    const matchesQuery = normalizedQuery
-      ? searchable.some((value) => value.toLowerCase().includes(normalizedQuery))
-      : true
+  const filteredTickets = useMemo(
+    () =>
+      tickets.filter((ticket) => {
+        const matchesStatus = statusFilter === 'ALL' || ticket.status === statusFilter
+        const matchesTicketQuery = matchesQuery(
+          [
+            `SCSS-${ticket.id ?? 'NEW'}`,
+            ticket.title,
+            ticket.category,
+            ticket.status,
+            ticket.department,
+            ticket.assignee,
+            ticket.location,
+          ],
+          normalizedQuery,
+        )
 
-    if (activeNav === 'ticket-management') {
-      return matchesStatus && matchesQuery
-    }
-
-    return matchesQuery
-  })
-
-  const filteredUsers = users.filter((user) => {
-    const searchable = [user.username ?? '', user.email ?? '', user.role ?? '', String(user.id ?? '')]
-
-    return normalizedQuery
-      ? searchable.some((value) => value.toLowerCase().includes(normalizedQuery))
-      : true
-  })
-
-  const filteredAssignees = assigneeUsers.filter((user) => {
-    const searchable = [user.username ?? '', user.email ?? '', user.role ?? '', String(user.id ?? '')]
-
-    return normalizedQuery
-      ? searchable.some((value) => value.toLowerCase().includes(normalizedQuery))
-      : true
-  })
-
-  const filteredCategories = categories.filter((category) => {
-    const searchable = [
-      category.name ?? '',
-      category.department ?? '',
-      category.serviceLabel ?? '',
-      category.defaultLocation ?? '',
-      category.responseTarget ?? '',
-    ]
-
-    return normalizedQuery
-      ? searchable.some((value) => value.toLowerCase().includes(normalizedQuery))
-      : true
-  })
-
-  const selectedTicket =
-    tickets.find((ticket) => ticket.id === selectedTicketId) || filteredTickets[0] || tickets[0] || null
-
-  const total = tickets.length
-  const resolved = tickets.filter((ticket) => ticket.status === 'RESOLVED').length
-  const inProgress = tickets.filter((ticket) => ticket.status === 'IN_PROGRESS').length
-  const openCount = tickets.filter((ticket) => ticket.status === 'OPEN').length
-  const unassignedTickets = tickets.filter((ticket) => !ticket.assignee || ticket.assignee === 'Unassigned')
-  const unassignedOpenTickets = unassignedTickets.filter((ticket) => ticket.status === 'OPEN')
-  const activeAssignedTickets = tickets.filter(
-    (ticket) =>
-      ticket.assignee &&
-      ticket.assignee !== 'Unassigned' &&
-      (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS'),
+        return activeNav === 'ticket-management'
+          ? matchesStatus && matchesTicketQuery
+          : matchesTicketQuery
+      }),
+    [activeNav, normalizedQuery, statusFilter, tickets],
   )
-  const resolvedToday = tickets.filter((ticket) => {
-    if (ticket.status !== 'RESOLVED' || !ticket.updatedAt) {
-      return false
-    }
 
-    const updatedAt = new Date(ticket.updatedAt)
+  const filteredUsers = useMemo(
+    () =>
+      users.filter((user) =>
+        matchesQuery([user.username, user.email, user.role, String(user.id ?? '')], normalizedQuery),
+      ),
+    [normalizedQuery, users],
+  )
+
+  const filteredAssignees = useMemo(
+    () =>
+      assigneeUsers.filter((user) =>
+        matchesQuery([user.username, user.email, user.role, String(user.id ?? '')], normalizedQuery),
+      ),
+    [assigneeUsers, normalizedQuery],
+  )
+
+  const filteredCategories = useMemo(
+    () =>
+      categories.filter((category) =>
+        matchesQuery(
+          [
+            category.name,
+            category.department,
+            category.serviceLabel,
+            category.defaultLocation,
+            category.responseTarget,
+          ],
+          normalizedQuery,
+        ),
+      ),
+    [categories, normalizedQuery],
+  )
+
+  const selectedTicket = useMemo(
+    () =>
+      tickets.find((ticket) => ticket.id === selectedTicketId) || filteredTickets[0] || tickets[0] || null,
+    [filteredTickets, selectedTicketId, tickets],
+  )
+
+  const ticketMetrics = useMemo(() => {
     const now = new Date()
-    return (
-      updatedAt.getFullYear() === now.getFullYear() &&
-      updatedAt.getMonth() === now.getMonth() &&
-      updatedAt.getDate() === now.getDate()
-    )
-  })
-  const staleOpenTickets = tickets.filter((ticket) => {
-    if (ticket.status !== 'OPEN' || !ticket.createdAt) {
-      return false
+    const oneDayInMs = 1000 * 60 * 60 * 24
+    const unassignedOpenTickets = []
+    const activeAssignedTickets = []
+    const resolvedToday = []
+    const staleOpenTickets = []
+    const ticketsByAssignee = {}
+    const openOrInProgressByAssignee = {}
+    let openCount = 0
+    let inProgress = 0
+    let resolved = 0
+    let openRoutedTickets = 0
+
+    for (const ticket of tickets) {
+      const assignee = ticket.assignee || 'Unassigned'
+      const hasAssignee = Boolean(ticket.assignee && ticket.assignee !== 'Unassigned')
+
+      if (hasAssignee) {
+        ticketsByAssignee[assignee] = (ticketsByAssignee[assignee] || 0) + 1
+      }
+
+      if (ticket.status === 'OPEN') {
+        openCount += 1
+
+        if (hasAssignee) {
+          openRoutedTickets += 1
+        } else {
+          unassignedOpenTickets.push(ticket)
+        }
+
+        if (ticket.createdAt) {
+          const createdAtMs = new Date(ticket.createdAt).getTime()
+          if (!Number.isNaN(createdAtMs) && Date.now() - createdAtMs >= oneDayInMs) {
+            staleOpenTickets.push(ticket)
+          }
+        }
+      }
+
+      if (ticket.status === 'IN_PROGRESS') {
+        inProgress += 1
+      }
+
+      if (ticket.status === 'RESOLVED') {
+        resolved += 1
+
+        if (ticket.updatedAt) {
+          const updatedAt = new Date(ticket.updatedAt)
+          if (
+            !Number.isNaN(updatedAt.getTime()) &&
+            updatedAt.getFullYear() === now.getFullYear() &&
+            updatedAt.getMonth() === now.getMonth() &&
+            updatedAt.getDate() === now.getDate()
+          ) {
+            resolvedToday.push(ticket)
+          }
+        }
+      }
+
+      if (hasAssignee && (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS')) {
+        activeAssignedTickets.push(ticket)
+        openOrInProgressByAssignee[assignee] = (openOrInProgressByAssignee[assignee] || 0) + 1
+      }
     }
 
-    const createdAt = new Date(ticket.createdAt).getTime()
-    return Date.now() - createdAt >= 1000 * 60 * 60 * 24
-  })
-  const dispatchPreviewTickets = [...unassignedOpenTickets]
-    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
-    .slice(0, 5)
-  const recentResolvedTickets = [...resolvedToday]
-    .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
-    .slice(0, 4)
-  const assigneeWorkload = Object.entries(
-    activeAssignedTickets.reduce((workload, ticket) => {
-      const assignee = ticket.assignee || 'Unassigned'
-      workload[assignee] = (workload[assignee] || 0) + 1
-      return workload
-    }, {}),
+    return {
+      total: tickets.length,
+      openCount,
+      inProgress,
+      resolved,
+      openRoutedTickets,
+      unassignedOpenTickets,
+      activeAssignedTickets,
+      resolvedToday,
+      staleOpenTickets,
+      ticketsByAssignee,
+      openOrInProgressByAssignee,
+    }
+  }, [tickets])
+
+  const {
+    total,
+    openCount,
+    inProgress,
+    resolved,
+    openRoutedTickets,
+    unassignedOpenTickets,
+    activeAssignedTickets,
+    resolvedToday,
+    staleOpenTickets,
+    ticketsByAssignee,
+    openOrInProgressByAssignee,
+  } = ticketMetrics
+
+  const dispatchPreviewTickets = useMemo(
+    () =>
+      [...unassignedOpenTickets]
+        .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+        .slice(0, 5),
+    [unassignedOpenTickets],
   )
-    .map(([name, count]) => ({ name, count }))
-    .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name))
-    .slice(0, 5)
+
+  const recentResolvedTickets = useMemo(
+    () =>
+      [...resolvedToday]
+        .sort((left, right) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+        .slice(0, 4),
+    [resolvedToday],
+  )
+
+  const assigneeWorkload = useMemo(
+    () =>
+      Object.entries(openOrInProgressByAssignee)
+        .map(([name, count]) => ({ name, count }))
+        .sort((left, right) => right.count - left.count || left.name.localeCompare(right.name))
+        .slice(0, 5),
+    [openOrInProgressByAssignee],
+  )
+
+  const assigneeInsights = useMemo(
+    () =>
+      filteredAssignees.map((assignee) => {
+        const assigneeName = assignee.username || 'Unassigned'
+        const activeTickets = openOrInProgressByAssignee[assigneeName] || 0
+        const totalTickets = ticketsByAssignee[assigneeName] || 0
+
+        return {
+          ...assignee,
+          activeTickets,
+          openTickets: activeTickets,
+          totalTickets,
+        }
+      }),
+    [filteredAssignees, openOrInProgressByAssignee, ticketsByAssignee],
+  )
+
+  const busiestAssignee = useMemo(
+    () =>
+      [...assigneeInsights].sort(
+        (left, right) =>
+          right.activeTickets - left.activeTickets ||
+          left.username.localeCompare(right.username),
+      )[0] || null,
+    [assigneeInsights],
+  )
+
+  const adminUsersCount = useMemo(
+    () => users.filter((user) => user.role === 'ADMIN').length,
+    [users],
+  )
+  const distinctDepartmentCount = useMemo(
+    () => new Set(categories.map((category) => category.department)).size,
+    [categories],
+  )
 
   const stats = [
     {
@@ -1455,13 +1542,19 @@ function App() {
         ? 'Search assignees by username, email, or ID'
       : activeNav === 'category-management'
         ? 'Search departments, service labels, or locations'
-      : 'Search tickets, departments, assignees, or locations'
+        : 'Search tickets, departments, assignees, or locations'
 
-  const selectedAssigneeOptions = assigneeUsers.length
-    ? assigneeUsers.map((user) => user.username)
-    : selectedTicket && categoryMeta[selectedTicket.category]
-      ? categoryMeta[selectedTicket.category].assignees
-      : categoryMeta['Facilities'].assignees
+  const selectedAssigneeOptions = useMemo(() => {
+    if (assigneeUsers.length) {
+      return assigneeUsers.map((user) => user.username)
+    }
+
+    if (selectedTicket && categoryMeta[selectedTicket.category]) {
+      return categoryMeta[selectedTicket.category].assignees
+    }
+
+    return categoryMeta.Facilities?.assignees || []
+  }, [assigneeUsers, categoryMeta, selectedTicket])
 
   function openDispatchQueue(targetTicketId = null) {
     setStatusFilter('OPEN')
@@ -1488,29 +1581,6 @@ function App() {
     if (key === 'report-issue') {
       setIsModalOpen(true)
     }
-  }
-
-  function handleTemporaryRoleChange(nextRole) {
-    setTemporaryRole(nextRole)
-    setQuery('')
-    setIsSidebarOpen(false)
-
-    if (nextRole === 'ADMIN') {
-      setActiveNav('operations')
-      return
-    }
-
-    if (nextRole === 'STAFF') {
-      setActiveNav('operations')
-      return
-    }
-
-    if (nextRole === 'ASSIGNEE') {
-      setActiveNav('assigned-tickets')
-      return
-    }
-
-    setActiveNav('operations')
   }
 
   function renderOverviewCards() {
@@ -1829,7 +1899,7 @@ function App() {
             <article className="rounded-3xl bg-slate-50 p-5">
               <p className="text-sm font-semibold text-slate-900">Admins</p>
               <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {users.filter((user) => user.role === 'ADMIN').length}
+                {adminUsersCount}
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-500">
                 Privileged accounts with dashboard, ticket, and user access.
@@ -2084,37 +2154,6 @@ function App() {
   }
 
   function renderAssigneeManagementPage() {
-    const assigneeWorkloadMap = activeAssignedTickets.reduce((workload, ticket) => {
-      const assignee = ticket.assignee || 'Unassigned'
-      workload[assignee] = (workload[assignee] || 0) + 1
-      return workload
-    }, {})
-
-    const assigneeInsights = filteredAssignees.map((assignee) => {
-      const totalTickets = tickets.filter((ticket) => ticket.assignee === assignee.username).length
-      const activeTickets = assigneeWorkloadMap[assignee.username] || 0
-      const openTickets = tickets.filter(
-        (ticket) =>
-          ticket.assignee === assignee.username &&
-          (ticket.status === 'OPEN' || ticket.status === 'IN_PROGRESS'),
-      ).length
-
-      return {
-        ...assignee,
-        activeTickets,
-        openTickets,
-        totalTickets,
-      }
-    })
-
-    const busiestAssignee =
-      [...assigneeInsights].sort((left, right) => right.activeTickets - left.activeTickets)[0] ||
-      null
-
-    const openRoutedTickets = tickets.filter(
-      (ticket) => ticket.assignee && ticket.assignee !== 'Unassigned' && ticket.status === 'OPEN',
-    ).length
-
     return (
       <section className="mt-6 grid gap-6 2xl:grid-cols-[1.05fr_0.95fr]">
         <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
@@ -2260,8 +2299,8 @@ function App() {
           </div>
 
           <div className="mt-6 space-y-3">
-            {assigneeWorkloadMap && Object.keys(assigneeWorkloadMap).length ? (
-              Object.entries(assigneeWorkloadMap)
+            {Object.keys(openOrInProgressByAssignee).length ? (
+              Object.entries(openOrInProgressByAssignee)
                 .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
                 .slice(0, 6)
                 .map(([name, count]) => (
@@ -2321,7 +2360,7 @@ function App() {
             <article className="rounded-3xl bg-slate-50 p-5">
               <p className="text-sm font-semibold text-slate-900">Departments</p>
               <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {new Set(categories.map((category) => category.department)).size}
+                {distinctDepartmentCount}
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-500">
                 Distinct departments currently mapped to routing.
@@ -3492,12 +3531,14 @@ function TicketDetailsPanel({
   )
 }
 
-function DetailStat({ icon: Icon, label, value }) {
+function DetailStat({ icon, label, value }) {
+  const IconComponent = icon
+
   return (
     <div className="rounded-3xl bg-slate-50 p-4">
       <div className="flex items-center gap-3">
         <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#003366] shadow-sm">
-          <Icon className="h-4 w-4" />
+          <IconComponent className="h-4 w-4" />
         </div>
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">

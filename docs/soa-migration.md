@@ -1,120 +1,127 @@
-# SmartCampus SOA Migration Plan
+# SmartCampus Service Architecture (Current State)
 
-## Current state
+This document describes the architecture that is currently implemented in this repository.
 
-The backend is currently a single Spring Boot deployable:
+## Architecture summary
 
-- `AuthController` handles login/session endpoints (`/api/auth/*`).
-- `UserManagementController` handles user CRUD and role-based operations (`/api/users/*`).
-- `TicketController` handles tickets, assignment, status, and comments (`/api/tickets/*`).
-- `SupportCategoryController` handles departments (`/api/departments/*`).
+The backend is deployed as multiple Spring Boot services behind an API Gateway.
 
-This is a monolith with domain modules, not a service-oriented deployment.
+- `api-gateway` (`8080`): public entrypoint for `/api/**`
+- `identity-service` (`8081`): authentication and user management
+- `ticket-service` (`8082`): ticketing and ticket comments
+- `department-service` (`8083`): department/support category catalog
+- `lost-found-service` (`8084`): lost/found workflows and claim review
 
-## Target service boundaries
+MySQL runs as a shared engine with separate schemas per service:
 
-Use these boundaries to reduce coupling and keep ownership clear:
+- `smartcampus_identity`
+- `smartcampus_ticket`
+- `smartcampus_department`
+- `smartcampus_lostfound`
+
+## Service boundaries and ownership
 
 1. Identity Service
-- Owns users, credentials, sessions/tokens, and role checks.
+- Owns:
+  - `users`
+  - `auth_sessions`
 - Endpoints:
   - `/api/auth/*`
   - `/api/users/*`
-- Data ownership:
-  - `users`
-  - `auth_sessions`
+- Responsibilities:
+  - login/logout/current-user lookup
+  - role-based user management
+  - session-token lifecycle
 
 2. Ticket Service
-- Owns tickets and ticket comments.
-- Endpoints:
-  - `/api/tickets/*`
-- Data ownership:
+- Owns:
   - `tickets`
   - `comments`
+- Endpoints:
+  - `/api/tickets/*`
+- Responsibilities:
+  - ticket submission and retrieval
+  - assignment/status updates
+  - comment history and summary counters
 - Integration:
-  - Reads user identity/role from token claims or identity introspection.
-  - Stores assignee as `assigneeUserId` (future), not free-text username.
+  - validates department/category against Department Service
+  - uses gateway-enriched identity headers for protected endpoints
 
 3. Department Service
-- Owns department metadata.
+- Owns:
+  - `departments`
 - Endpoints:
   - `/api/departments/*`
-- Data ownership:
-  - `departments`
+- Responsibilities:
+  - support category/department CRUD
+  - routing metadata (service label, default location, response target)
 
 4. Lost & Found Service
-- Owns lost item reports, found item registry, and claim verification workflow.
-- Endpoints:
-  - `/api/lost-found/*`
-- Data ownership:
+- Owns:
   - `lost_item_reports`
   - `found_item_records`
-- Integration:
-  - Triggers notification workflow when potential matches are detected.
+- Endpoints:
+  - `/api/lost-found/*`
+- Responsibilities:
+  - report lost items
+  - register found items
+  - heuristic matching and claim review workflow
+  - optional outbound notification dispatch
 
-5. API Gateway (edge)
-- Single public entry point for frontend.
-- Performs route dispatch:
-  - `/api/auth`, `/api/users` -> Identity Service
-  - `/api/tickets` -> Ticket Service
-  - `/api/departments` -> Department Service
-  - `/api/lost-found` -> Lost & Found Service
-- Can centralize CORS, rate limits, and request tracing.
+5. API Gateway
+- Owns:
+  - edge routing and request forwarding
+  - CORS handling for `/api/**`
+  - identity enrichment for protected downstream calls
+- Routing:
+  - `/api/auth/*`, `/api/users/*` -> Identity Service
+  - `/api/tickets/*` -> Ticket Service
+  - `/api/departments/*` -> Department Service
+  - `/api/lost-found/*` -> Lost & Found Service
 
-## Migration strategy (strangler pattern)
+## Authentication and authorization flow
 
-### Phase 1: Prepare contracts and routing
+Current implementation is session-token based (not JWT):
 
-1. Freeze endpoint contracts currently used by frontend in `Frontend/src/App.jsx`.
-2. Add gateway in front of monolith (all routes still point to monolith initially).
-3. Keep frontend pointing to one base URL (`VITE_API_BASE_URL`) so service moves are transparent.
+1. Client logs in via `POST /api/auth/login`.
+2. Identity Service returns an opaque bearer token.
+3. Protected requests go through API Gateway.
+4. Gateway calls `GET /api/auth/me` on Identity Service using the bearer token.
+5. Gateway injects:
+   - `X-User-Id`
+   - `X-Username`
+   - `X-Email`
+   - `X-Role`
+6. Gateway also injects `X-Internal-Gateway-Key` for internal-service trust.
+7. Downstream service interceptors validate shared key and user headers, then enforce role rules.
 
-### Phase 2: Extract Department Service first
+Public route exceptions:
 
-1. Move department model/repository/controller into a new Spring Boot app.
-2. Give Department Service its own database schema.
-3. Switch gateway route `/api/departments` from monolith to Department Service.
-4. Keep old monolith endpoint temporarily disabled or read-only for safety.
+- `POST /api/tickets` is allowed without authentication.
+- `GET /api/departments/**` is publicly readable.
 
-Why first: low coupling and low auth complexity.
+## Data and integration decisions (as implemented)
 
-### Phase 3: Extract Ticket Service
+1. Database-per-service schema
+- Each service reads/writes only its own schema.
+- Cross-service joins/foreign keys are avoided.
 
-1. Move ticket/comment domain into Ticket Service.
-2. Replace direct in-process auth assumptions with:
-   - JWT claims validation in Ticket Service, or
-   - identity introspection call to Identity Service.
-3. Route `/api/tickets` through gateway to Ticket Service.
-4. Add idempotent ticket status/assignment update handling and service-level audit logs.
+2. Synchronous service-to-service communication
+- API Gateway -> Identity Service for auth enrichment.
+- Ticket Service -> Department Service for category validation.
 
-### Phase 4: Keep Identity in monolith, then isolate
+3. Coarse-grained role control
+- Roles include `ADMIN`, `STAFF`, `ASSIGNEE`, `SECURITY`.
+- Each service applies role checks in its controller layer.
 
-1. Move `AuthController`, `UserManagementController`, auth security components into Identity Service.
-2. Route `/api/auth` and `/api/users` to Identity Service.
-3. Retire monolith app once all routes are cut over.
+## Migration status
 
-## Data and integration decisions
+The service split described in earlier migration planning has already been executed in this repo.
+Legacy "monolith current state" notes are no longer accurate for the runtime setup.
 
-1. Database per service
-- Each service owns its schema and write access.
-- No cross-service foreign keys.
+## Known technical gaps / future improvements
 
-2. Identity propagation
-- Prefer signed JWT access tokens with `sub`, `role`, `username`.
-- Services validate signature and expiration locally.
-
-3. Consistency
-- Use synchronous APIs for command/query flows at first.
-- Add event publishing later for cross-service projections if needed.
-
-4. Observability baseline
-- Correlation ID header from gateway to all services.
-- Structured logs with service name and request ID.
-
-## Minimal technical backlog
-
-1. Create `identity-service`, `ticket-service`, and `department-service` Spring Boot projects.
-2. Introduce API gateway config and local compose stack.
-3. Move department domain first and verify no frontend changes required.
-4. Move ticket domain and replace username-based assignee with stable user ID.
-5. Move auth/user domain last and retire monolith.
+1. Move from opaque session tokens to signed JWT for local validation in services.
+2. Replace string-based assignee (`ticket.assignee` username) with stable user-id linkage.
+3. Add distributed tracing/correlation-id propagation and standardized structured logs.
+4. Harden gateway and service security policy (rate limits, stricter origin policy, stronger internal auth).

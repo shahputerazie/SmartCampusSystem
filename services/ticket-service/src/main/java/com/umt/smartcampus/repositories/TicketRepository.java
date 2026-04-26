@@ -12,6 +12,8 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
 
     List<Ticket> findByAssigneeIgnoreCaseOrderByCreatedAtDesc(String assignee);
 
+    boolean existsByTitleIgnoreCase(String title);
+
     long countByStatus(String status);
 
     long countByCategoryIgnoreCase(String category);
