@@ -10,14 +10,12 @@ The backend is deployed as multiple Spring Boot services behind an API Gateway.
 - `identity-service` (`8081`): authentication and user management
 - `ticket-service` (`8082`): ticketing and ticket comments
 - `department-service` (`8083`): department/support category catalog
-- `lost-found-service` (`8084`): lost/found workflows and claim review
 
 MySQL runs as a shared engine with separate schemas per service:
 
 - `smartcampus_identity`
 - `smartcampus_ticket`
 - `smartcampus_department`
-- `smartcampus_lostfound`
 
 ## Service boundaries and ownership
 
@@ -56,19 +54,7 @@ MySQL runs as a shared engine with separate schemas per service:
   - support category/department CRUD
   - routing metadata (service label, default location, response target)
 
-4. Lost & Found Service
-- Owns:
-  - `lost_item_reports`
-  - `found_item_records`
-- Endpoints:
-  - `/api/lost-found/*`
-- Responsibilities:
-  - report lost items
-  - register found items
-  - heuristic matching and claim review workflow
-  - optional outbound notification dispatch
-
-5. API Gateway
+4. API Gateway
 - Owns:
   - edge routing and request forwarding
   - CORS handling for `/api/**`
@@ -77,7 +63,6 @@ MySQL runs as a shared engine with separate schemas per service:
   - `/api/auth/*`, `/api/users/*` -> Identity Service
   - `/api/tickets/*` -> Ticket Service
   - `/api/departments/*` -> Department Service
-  - `/api/lost-found/*` -> Lost & Found Service
 
 ## Authentication and authorization flow
 

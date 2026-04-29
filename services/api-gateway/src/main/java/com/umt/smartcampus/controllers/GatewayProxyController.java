@@ -84,10 +84,6 @@ public class GatewayProxyController {
             return routes.getDepartmentBaseUrl();
         }
 
-        if (path.startsWith("/api/lost-found")) {
-            return routes.getLostFoundBaseUrl();
-        }
-
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Route not found.");
     }
 
@@ -114,10 +110,6 @@ public class GatewayProxyController {
 
         if (path.startsWith("/api/departments")) {
             return !"GET".equalsIgnoreCase(method);
-        }
-
-        if (path.startsWith("/api/lost-found")) {
-            return true;
         }
 
         return false;

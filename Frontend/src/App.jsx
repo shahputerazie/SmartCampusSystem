@@ -204,7 +204,7 @@ function buildComments(status, assignee) {
 
   return (commentTemplates[status] || commentTemplates.OPEN).map((message, index) => ({
     id: `${status}-${index}-${actor}`,
-    author: index === 0 ? 'SCSS System' : actor,
+    author: index === 0 ? 'I-Kampus System' : actor,
     role: index === 0 ? 'System' : 'Staff',
     message,
     createdAt: new Date(Date.now() - (index + 1) * 1000 * 60 * 45).toISOString(),
@@ -543,7 +543,7 @@ function App() {
       }
 
       setIsDemoMode(false)
-      const message = `Ticket SCSS-${createdTicket.id ?? 'NEW'} submitted successfully.`
+      const message = `Ticket I-Kampus-${createdTicket.id ?? 'NEW'} submitted successfully.`
       setSubmitNotice(message)
       notifyAction(message)
       setForm(initialForm)
@@ -566,7 +566,7 @@ function App() {
 
       setIsDemoMode(true)
       setError('Backend create endpoint is unavailable. Ticket added in interface demo mode.')
-      const message = `Ticket SCSS-${localTicket.id} submitted in demo mode.`
+      const message = `Ticket I-Kampus-${localTicket.id} submitted in demo mode.`
       setSubmitNotice(message)
       notifyAction(message)
       setForm(initialForm)
@@ -1258,7 +1258,7 @@ function App() {
         const matchesStatus = statusFilter === 'ALL' || ticket.status === statusFilter
         const matchesTicketQuery = matchesQuery(
           [
-            `SCSS-${ticket.id ?? 'NEW'}`,
+            `I-Kampus-${ticket.id ?? 'NEW'}`,
             ticket.title,
             ticket.category,
             ticket.status,
@@ -1534,7 +1534,7 @@ function App() {
     'category-management': 'Department management',
   }
 
-  const panelTitle = panelTitleMap[activeNav] || 'Smart Campus Support System'
+  const panelTitle = panelTitleMap[activeNav] || 'I-Kampus'
   const searchPlaceholder =
     activeNav === 'user-management'
       ? 'Search users by username, email, role, or ID'
@@ -1645,7 +1645,7 @@ function App() {
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-slate-950">{ticket.title}</p>
                       <p className="mt-1 text-sm text-slate-500">
-                        SCSS-{ticket.id} • {ticket.category}
+                        I-Kampus-{ticket.id} • {ticket.category}
                       </p>
                       <p className="mt-2 text-sm text-slate-600">{ticket.department}</p>
                     </div>
@@ -1726,7 +1726,7 @@ function App() {
                         <div className="min-w-0">
                           <p className="text-sm font-semibold text-slate-950">{ticket.title}</p>
                           <p className="mt-1 text-sm text-slate-500">
-                            {ticket.assignee} • SCSS-{ticket.id}
+                            {ticket.assignee} • I-Kampus-{ticket.id}
                           </p>
                         </div>
                         <span className="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
@@ -2687,7 +2687,7 @@ function App() {
               Universiti Malaysia Terengganu
             </p>
             <h1 className="mt-6 max-w-3xl text-4xl font-semibold tracking-tight">
-              Smart Campus Support System
+              I-Kampus
             </h1>
             <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-200">
               Submit campus support requests directly without signing in. Staff and admin users can
@@ -2976,7 +2976,7 @@ function App() {
             <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#003366]/70">
-                  Smart Campus Support System
+                  I-Kampus
                 </p>
                 <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
                   Submit Ticket
@@ -3293,7 +3293,7 @@ function App() {
 
                 <div>
                   <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#003366]/70">
-                    Smart Campus Support System
+                    I-Kampus
                   </p>
                   <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">
                     {panelTitle}
@@ -3408,7 +3408,7 @@ function TicketDetailsPanel({
         <div className="flex flex-col gap-4 border-b border-slate-200 pb-5">
           <div className="flex flex-wrap items-center gap-3">
             <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
-              SCSS-{ticket.id ?? 'NEW'}
+              I-Kampus-{ticket.id ?? 'NEW'}
             </span>
             <span
               className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusBadge.className}`}

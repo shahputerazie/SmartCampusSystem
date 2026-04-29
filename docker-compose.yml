@@ -65,22 +65,6 @@ services:
       mysql:
         condition: service_healthy
 
-  lost-found-service:
-    build:
-      context: ./services/lost-found-service
-    container_name: smartcampus-lost-found-service
-    restart: unless-stopped
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/smartcampus_lostfound
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: admin
-      SECURITY_GATEWAY_SHARED_KEY: smartcampus-internal-gateway-key
-    ports:
-      - "8084:8084"
-    depends_on:
-      mysql:
-        condition: service_healthy
-
   api-gateway:
     build:
       context: ./services/api-gateway
@@ -90,7 +74,6 @@ services:
       GATEWAY_ROUTES_IDENTITY_BASE_URL: http://identity-service:8081
       GATEWAY_ROUTES_TICKET_BASE_URL: http://ticket-service:8082
       GATEWAY_ROUTES_DEPARTMENT_BASE_URL: http://department-service:8083
-      GATEWAY_ROUTES_LOST_FOUND_BASE_URL: http://lost-found-service:8084
       GATEWAY_SECURITY_SHARED_KEY: smartcampus-internal-gateway-key
     ports:
       - "8080:8080"
@@ -98,7 +81,6 @@ services:
       - identity-service
       - ticket-service
       - department-service
-      - lost-found-service
 
   frontend:
     build:

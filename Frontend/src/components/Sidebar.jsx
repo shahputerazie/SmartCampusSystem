@@ -42,9 +42,9 @@ function Sidebar({
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-[#FFCC00]">
               Universiti Malaysia Terengganu
             </p>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight">SCSS Admin Console</h2>
+            <h2 className="mt-3 text-2xl font-semibold tracking-tight">I-Kampus Admin Console</h2>
             <p className="mt-2 text-sm leading-6 text-slate-300">
-              Smart Campus Support System
+              I-Kampus
             </p>
           </div>
 

@@ -82,7 +82,7 @@ function TicketTable({ isLoading, onSelectTicket, selectedTicketId, tickets }) {
                   {ticket.title}
                 </p>
                 <p className="mt-1 text-sm text-slate-500">
-                  SCSS-{ticket.id ?? 'NEW'} • {ticket.category || 'General'}
+                  I-Kampus-{ticket.id ?? 'NEW'} • {ticket.category || 'General'}
                 </p>
               </div>
 
