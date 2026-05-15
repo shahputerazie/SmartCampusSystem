@@ -3,21 +3,27 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock3,
-  Filter,
   LogOut,
-  MapPin,
-  MessageSquare,
   Menu,
-  Plus,
   Search,
   ShieldCheck,
-  UserRound,
   Users,
   Wrench,
   X,
 } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import TicketTable from './components/TicketTable'
+import MiniStat from './components/MiniStat'
+import TicketDetailsPanel from './components/TicketDetailsPanel'
+import AssignedTicketsPage from './pages/AssignedTicketsPage'
+import AssigneeManagementPage from './pages/AssigneeManagementPage'
+import CategoryManagementPage from './pages/CategoryManagementPage'
+import OperationsPage from './pages/OperationsPage'
+import PublicLandingPage from './pages/PublicLandingPage'
+import ReportIssuePage from './pages/ReportIssuePage'
+import SubmissionPortalPage from './pages/SubmissionPortalPage'
+import TicketManagementPage from './pages/TicketManagementPage'
+import UserManagementPage from './pages/UserManagementPage'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080').replace(/\/$/, '')
 const API_URL = `${API_BASE_URL}/api/tickets`
@@ -1754,1311 +1760,146 @@ function App() {
     )
   }
 
-  function renderManagementPage() {
-    return (
-      <section className="mt-6 grid gap-6 2xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">Ticket management</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                View all tickets and review full ticket details from one queue.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <label className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-                <Filter className="h-4 w-4" />
-                <select
-                  value={statusFilter}
-                  onChange={(event) => setStatusFilter(event.target.value)}
-                  className="bg-transparent outline-none"
-                >
-                  <option value="ALL">All statuses</option>
-                  {statusOptions.map((status) => (
-                    <option key={status} value={status}>
-                      {getStatusLabel(status)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <button
-                type="button"
-                onClick={openCreateModal}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-[#003366]"
-              >
-                <Plus className="h-4 w-4" />
-                New Ticket
-              </button>
-            </div>
-          </div>
-
-          <TicketTable
-            isLoading={isLoading}
-            selectedTicketId={selectedTicket?.id ?? null}
-            tickets={filteredTickets}
-            onSelectTicket={setSelectedTicketId}
-          />
-        </div>
-
-        <TicketDetailsPanel
-          mode="management"
-          commentValue={draftComment}
-          onAssigneeChange={handleAssigneeChange}
-          onCommentChange={setDraftComment}
-          onCommentSubmit={handleCommentSubmit}
-          onStatusChange={handleStatusChange}
-          selectedAssigneeOptions={selectedAssigneeOptions}
-          ticket={selectedTicket}
-        />
-      </section>
-    )
-  }
-
-  function renderAssignedTicketsPage() {
-    return (
-      <section className="mt-6 grid gap-6 2xl:grid-cols-[1.15fr_0.85fr]">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">Assigned tickets</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Review the tickets assigned to you and keep work progress up to date.
-              </p>
-            </div>
-
-            <label className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-              <Filter className="h-4 w-4" />
-              <select
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-                className="bg-transparent outline-none"
-              >
-                <option value="ALL">All statuses</option>
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {getStatusLabel(status)}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <TicketTable
-            isLoading={isLoading}
-            selectedTicketId={selectedTicket?.id ?? null}
-            tickets={filteredTickets}
-            onSelectTicket={setSelectedTicketId}
-          />
-        </div>
-
-        <TicketDetailsPanel
-          mode="status-comments"
-          commentValue={draftComment}
-          onAssigneeChange={handleAssigneeChange}
-          onCommentChange={setDraftComment}
-          onCommentSubmit={handleCommentSubmit}
-          onStatusChange={handleStatusChange}
-          selectedAssigneeOptions={selectedAssigneeOptions}
-          ticket={selectedTicket}
-        />
-      </section>
-    )
-  }
-
-  function renderUserManagementPage() {
-    const editingUser = users.find((user) => user.id === editingUserId) ?? null
-
-    return (
-      <section className="mt-6 grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">User management</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Create, edit, and remove admin, staff, and assignee accounts.
-              </p>
-            </div>
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003366] text-white">
-              <Users className="h-5 w-5" />
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <article className="rounded-3xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Accounts</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {users.length}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Total users currently available in the system.
-              </p>
-            </article>
-
-            <article className="rounded-3xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Admins</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {adminUsersCount}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Privileged accounts with dashboard, ticket, and user access.
-              </p>
-            </article>
-
-            <article className="rounded-3xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Filtered results</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {filteredUsers.length}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Results matching the current search query.
-              </p>
-            </article>
-          </div>
-
-          {userNotice ? (
-            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              {userNotice}
-            </div>
-          ) : null}
-
-          {usersError ? (
-            <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {usersError}
-            </div>
-          ) : null}
-
-          <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200/80">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-left">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      User
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Email
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Role
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
-                  {isUsersLoading ? (
-                    <tr>
-                      <td className="px-5 py-6 text-sm text-slate-500" colSpan="4">
-                        Loading users...
-                      </td>
-                    </tr>
-                  ) : filteredUsers.length ? (
-                    filteredUsers.map((user) => (
-                      <tr key={user.id} className="align-top">
-                        <td className="px-5 py-4">
-                          <p className="text-sm font-semibold text-slate-950">{user.username}</p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
-                            ID {user.id}
-                          </p>
-                        </td>
-                        <td className="px-5 py-4 text-sm text-slate-600">{user.email}</td>
-                        <td className="px-5 py-4">
-                          <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-slate-700">
-                            {user.role}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => beginEditUser(user)}
-                              className="inline-flex h-9 items-center justify-center rounded-2xl border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-[#003366]"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteUser(user)}
-                              disabled={deletingUserId === user.id}
-                              className="inline-flex h-9 items-center justify-center rounded-2xl border border-rose-200 px-3 text-sm font-medium text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
-                            >
-                              {deletingUserId === user.id ? 'Deleting...' : 'Delete'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="px-5 py-6 text-sm text-slate-500" colSpan="4">
-                        No users match the current search.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">
-                {editingUser ? `Edit ${editingUser.username}` : 'Create user'}
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                {editingUser
-                  ? 'Update account identity, role, or password. Leave password blank to keep the current one.'
-                  : 'Add a new account and assign the correct role for access control.'}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={resetUserForm}
-              className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
-            >
-              {editingUser ? 'Cancel edit' : 'Reset'}
-            </button>
-          </div>
-
-          <form className="mt-6 space-y-5" onSubmit={handleUserSubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="user-username">
-                Username
-              </label>
-              <input
-                id="user-username"
-                type="text"
-                required
-                value={userForm.username}
-                onChange={(event) =>
-                  setUserForm((currentForm) => ({
-                    ...currentForm,
-                    username: event.target.value,
-                  }))
-                }
-                placeholder="Enter username"
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="user-email">
-                Email
-              </label>
-              <input
-                id="user-email"
-                type="email"
-                required
-                value={userForm.email}
-                onChange={(event) =>
-                  setUserForm((currentForm) => ({
-                    ...currentForm,
-                    email: event.target.value,
-                  }))
-                }
-                placeholder="name@umt.edu.my"
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-              />
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700" htmlFor="user-password">
-                  Password
-                </label>
-                <input
-                  id="user-password"
-                  type="password"
-                  minLength={editingUserId ? undefined : 8}
-                  required={!editingUserId}
-                  value={userForm.password}
-                  onChange={(event) =>
-                    setUserForm((currentForm) => ({
-                      ...currentForm,
-                      password: event.target.value,
-                    }))
-                  }
-                  placeholder={editingUserId ? 'Leave blank to keep current password' : 'Set password'}
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700" htmlFor="user-role">
-                  Role
-                </label>
-                <select
-                  id="user-role"
-                  value={userForm.role}
-                  onChange={(event) =>
-                    setUserForm((currentForm) => ({
-                      ...currentForm,
-                      role: event.target.value,
-                    }))
-                  }
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                >
-                  {userRoleOptions.map((role) => (
-                    <option key={role} value={role}>
-                      {role}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="rounded-3xl bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Access summary
-              </p>
-              <p className="mt-2 text-sm text-slate-600">
-                `ADMIN` can manage users and tickets. `STAFF` can manage tickets. `ASSIGNEE`
-                appears in the ticket assignee dropdown and assigned work queue.
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                Passwords must be at least 8 characters.
-              </p>
-            </div>
-
-            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={resetUserForm}
-                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
-              >
-                Clear
-              </button>
-              <button
-                type="submit"
-                disabled={isSavingUser}
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#003366] px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(0,51,102,0.22)] transition hover:bg-[#0a4278] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSavingUser
-                  ? editingUserId
-                    ? 'Saving...'
-                    : 'Creating...'
-                  : editingUserId
-                    ? 'Save Changes'
-                    : 'Create User'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-    )
-  }
-
-  function renderAssigneeManagementPage() {
-    return (
-      <section className="mt-6 grid gap-6 2xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">Assignee management</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Monitor assignee accounts, current workload, and ticket routing pressure.
-              </p>
-            </div>
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003366] text-white">
-              <Users className="h-5 w-5" />
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <article className="rounded-3xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Assignees</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {assigneeUsers.length}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Total assignee accounts available for routing.
-              </p>
-            </article>
-
-            <article className="rounded-3xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Open routed</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {openRoutedTickets}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Tickets already assigned and still waiting on action.
-              </p>
-            </article>
-
-            <article className="rounded-3xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Filtered results</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {assigneeInsights.length}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Results matching the current search query.
-              </p>
-            </article>
-          </div>
-
-          {busiestAssignee ? (
-            <div className="mt-6 rounded-3xl border border-[#003366]/10 bg-[#003366]/5 px-5 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#003366]/70">
-                Current busiest assignee
-              </p>
-              <p className="mt-2 text-sm font-semibold text-slate-950">{busiestAssignee.username}</p>
-              <p className="mt-1 text-sm text-slate-600">
-                {busiestAssignee.activeTickets} active tickets, {busiestAssignee.openTickets} open tickets.
-              </p>
-            </div>
-          ) : null}
-
-          <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200/80">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-left">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Assignee
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Active
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Open
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Total
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
-                  {isUsersLoading ? (
-                    <tr>
-                      <td className="px-5 py-6 text-sm text-slate-500" colSpan="5">
-                        Loading assignees...
-                      </td>
-                    </tr>
-                  ) : assigneeInsights.length ? (
-                    assigneeInsights.map((assignee) => (
-                      <tr key={assignee.id} className="align-top">
-                        <td className="px-5 py-4">
-                          <p className="text-sm font-semibold text-slate-950">{assignee.username}</p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
-                            {assignee.email}
-                          </p>
-                        </td>
-                        <td className="px-5 py-4 text-sm text-slate-600">{assignee.activeTickets}</td>
-                        <td className="px-5 py-4 text-sm text-slate-600">{assignee.openTickets}</td>
-                        <td className="px-5 py-4 text-sm text-slate-600">{assignee.totalTickets}</td>
-                        <td className="px-5 py-4">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQuery(assignee.username)
-                              setStatusFilter('ALL')
-                              setActiveNav('ticket-management')
-                              const firstTicket =
-                                tickets.find((ticket) => ticket.assignee === assignee.username) || null
-                              if (firstTicket) {
-                                setSelectedTicketId(firstTicket.id)
-                              }
-                            }}
-                            className="inline-flex h-9 items-center justify-center rounded-2xl border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-[#003366]"
-                          >
-                            View tickets
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="px-5 py-6 text-sm text-slate-500" colSpan="5">
-                        No assignees match the current search.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">Assignment summary</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Operational load by assignee, based on tickets currently in the system.
-              </p>
-            </div>
-            <Users className="h-5 w-5 text-[#003366]" />
-          </div>
-
-          <div className="mt-6 space-y-3">
-            {Object.keys(openOrInProgressByAssignee).length ? (
-              Object.entries(openOrInProgressByAssignee)
-                .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0]))
-                .slice(0, 6)
-                .map(([name, count]) => (
-                  <div key={name} className="flex items-center justify-between rounded-3xl bg-slate-50 px-4 py-4">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-950">{name}</p>
-                      <p className="mt-1 text-sm text-slate-500">Active assigned tickets</p>
-                    </div>
-                    <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-2xl bg-[#003366] px-3 text-sm font-semibold text-white">
-                      {count}
-                    </span>
-                  </div>
-                ))
-            ) : (
-              <div className="rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-10 text-center">
-                <h3 className="text-lg font-semibold text-slate-900">No active load</h3>
-                <p className="mt-2 text-sm text-slate-500">
-                  Assign tickets to assignees to populate the workload summary.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-    )
-  }
-
-  function renderCategoryManagementPage() {
-    const editingCategory = categories.find((category) => category.id === editingCategoryId) ?? null
-
-    return (
-      <section className="mt-6 grid gap-6 2xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-4 border-b border-slate-200/80 pb-5 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">Department management</h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Manage support departments, routing, service labels, locations, and response targets.
-              </p>
-            </div>
-            <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#003366] text-white">
-              <Wrench className="h-5 w-5" />
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            <article className="rounded-3xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Departments</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {categories.length}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Total managed departments available for routing.
-              </p>
-            </article>
-
-            <article className="rounded-3xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Departments</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {distinctDepartmentCount}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Distinct departments currently mapped to routing.
-              </p>
-            </article>
-
-            <article className="rounded-3xl bg-slate-50 p-5">
-              <p className="text-sm font-semibold text-slate-900">Filtered results</p>
-              <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                {filteredCategories.length}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500">
-                Results matching the current search query.
-              </p>
-            </article>
-          </div>
-
-          {categoryNotice ? (
-            <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-              {categoryNotice}
-            </div>
-          ) : null}
-
-          {categoriesError ? (
-            <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {categoriesError}
-            </div>
-          ) : null}
-
-          <div className="mt-6 overflow-hidden rounded-3xl border border-slate-200/80">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200 text-left">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Department
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Department
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Location
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Target
-                    </th>
-                    <th className="px-5 py-4 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
-                  {isCategoriesLoading ? (
-                    <tr>
-                      <td className="px-5 py-6 text-sm text-slate-500" colSpan="5">
-                        Loading departments...
-                      </td>
-                    </tr>
-                  ) : filteredCategories.length ? (
-                    filteredCategories.map((category) => (
-                      <tr key={category.id} className="align-top">
-                        <td className="px-5 py-4">
-                          <p className="text-sm font-semibold text-slate-950">{category.name}</p>
-                          <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-500">
-                            {category.serviceLabel}
-                          </p>
-                        </td>
-                        <td className="px-5 py-4 text-sm text-slate-600">{category.department}</td>
-                        <td className="px-5 py-4 text-sm text-slate-600">{category.defaultLocation}</td>
-                        <td className="px-5 py-4 text-sm text-slate-600">{category.responseTarget}</td>
-                        <td className="px-5 py-4">
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => beginEditCategory(category)}
-                              className="inline-flex h-9 items-center justify-center rounded-2xl border border-slate-200 px-3 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-[#003366]"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteCategory(category)}
-                              disabled={deletingCategoryId === category.id}
-                              className="inline-flex h-9 items-center justify-center rounded-2xl border border-rose-200 px-3 text-sm font-medium text-rose-700 transition hover:border-rose-300 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-70"
-                            >
-                              {deletingCategoryId === category.id ? 'Deleting...' : 'Delete'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td className="px-5 py-6 text-sm text-slate-500" colSpan="5">
-                        No departments match the current search.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">
-                {editingCategory ? `Edit ${editingCategory.name}` : 'Create department'}
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Configure how ticket requests are routed and described across the system.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={resetCategoryForm}
-              className="inline-flex h-10 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
-            >
-              {editingCategory ? 'Cancel edit' : 'Reset'}
-            </button>
-          </div>
-
-          <form className="mt-6 space-y-5" onSubmit={handleCategorySubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="category-name">
-                Department name
-              </label>
-              <input
-                id="category-name"
-                type="text"
-                required
-                value={categoryForm.name}
-                onChange={(event) =>
-                  setCategoryForm((currentForm) => ({
-                    ...currentForm,
-                    name: event.target.value,
-                  }))
-                }
-                placeholder="Example: IT Support"
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="category-department">
-                Department
-              </label>
-              <input
-                id="category-department"
-                type="text"
-                required
-                value={categoryForm.department}
-                onChange={(event) =>
-                  setCategoryForm((currentForm) => ({
-                    ...currentForm,
-                    department: event.target.value,
-                  }))
-                }
-                placeholder="Example: Information Technology Centre"
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-              />
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700" htmlFor="department-service-label">
-                  Service label
-                </label>
-                <input
-                  id="department-service-label"
-                  type="text"
-                  required
-                  value={categoryForm.serviceLabel}
-                  onChange={(event) =>
-                    setCategoryForm((currentForm) => ({
-                      ...currentForm,
-                      serviceLabel: event.target.value,
-                    }))
-                  }
-                  placeholder="Example: Network & systems"
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700" htmlFor="category-response-target">
-                  Response target
-                </label>
-                <input
-                  id="category-response-target"
-                  type="text"
-                  required
-                  value={categoryForm.responseTarget}
-                  onChange={(event) =>
-                    setCategoryForm((currentForm) => ({
-                      ...currentForm,
-                      responseTarget: event.target.value,
-                    }))
-                  }
-                  placeholder="Example: 4 hours"
-                  className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700" htmlFor="category-location">
-                Default location
-              </label>
-              <input
-                id="category-location"
-                type="text"
-                required
-                value={categoryForm.defaultLocation}
-                onChange={(event) =>
-                  setCategoryForm((currentForm) => ({
-                    ...currentForm,
-                    defaultLocation: event.target.value,
-                  }))
-                }
-                placeholder="Example: Computer Lab 2"
-                className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-              />
-            </div>
-
-            <div className="rounded-3xl bg-slate-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Routing summary
-              </p>
-              <p className="mt-2 text-sm text-slate-600">
-                The department name appears in ticket forms. Department, service label, location, and response target are used across the public landing page and operations views.
-              </p>
-            </div>
-
-            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={resetCategoryForm}
-                className="inline-flex h-11 items-center justify-center rounded-2xl border border-slate-200 px-4 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:text-slate-900"
-              >
-                Clear
-              </button>
-              <button
-                type="submit"
-                disabled={isSavingCategory}
-                className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#003366] px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(0,51,102,0.22)] transition hover:bg-[#0a4278] disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {isSavingCategory
-                  ? editingCategoryId
-                    ? 'Saving...'
-                    : 'Creating...'
-                  : editingCategoryId
-                    ? 'Save Changes'
-                    : 'Create Department'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </section>
-    )
-  }
-
-  function renderOperationsView() {
-    if (effectiveRole === 'STAFF') {
-      return renderStaffDashboard()
-    }
-
-    return (
-      <>
-        {renderOverviewCards()}
-
-        <section className="mt-6 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">Ticket management</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            View all tickets, assign the correct owner, and manage operational ticket handling from
-            one queue.
-          </p>
-        </section>
-      </>
-    )
-  }
-
-  function renderBasicAccessView() {
-    return (
-      <section className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <article className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">Submission access</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            Temporary role preview is set to `{effectiveRole}`. This access level is limited to
-            ticket submission flows.
-          </p>
-
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-[#003366] px-5 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(0,51,102,0.22)] transition hover:bg-[#0a4278]"
-          >
-            Submit Ticket
-          </button>
-        </article>
-
-        <article className="rounded-3xl border border-slate-200/80 bg-slate-50 p-6 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-950">Available departments</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            {categoryOptions.map((category) => (
-              <div key={category} className="rounded-2xl bg-white px-4 py-4">
-                <p className="text-sm font-semibold text-slate-900">{category}</p>
-                <p className="mt-1 text-sm text-slate-500">{categoryMeta[category]?.department}</p>
-              </div>
-            ))}
-          </div>
-        </article>
-      </section>
-    )
-  }
-
-  function renderPublicLandingPage() {
-    return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,204,0,0.12),_transparent_24%),linear-gradient(180deg,_#f4f8fc_0%,_#edf3f9_50%,_#f7fafc_100%)] px-4 py-8 text-slate-900 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="mb-8 rounded-[36px] border border-white/70 bg-[#003366] px-8 py-10 text-white shadow-[0_32px_100px_rgba(15,23,42,0.14)] sm:px-10 lg:px-12">
-            <p className="text-sm font-medium uppercase tracking-[0.24em] text-[#FFCC00]">
-              Universiti Malaysia Terengganu
-            </p>
-            <h1 className="mt-6 max-w-3xl text-4xl font-semibold tracking-tight">
-              I-Kampus
-            </h1>
-            <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-200">
-              Submit campus support requests directly without signing in. Staff and admin users can
-              still access the operations workspace from the login panel.
-            </p>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <section className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8">
-              <div className="border-b border-slate-200/80 pb-6">
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#003366]/70">
-                  Public Ticket Submission
-                </p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
-                  Report an issue
-                </h2>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
-                  Share your contact details and issue summary so the support team can route the
-                  request to the correct department.
-                </p>
-              </div>
-
-              {submitNotice ? (
-                <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                  {submitNotice}
-                </div>
-              ) : null}
-
-              {error ? (
-                <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                  {error}
-                </div>
-              ) : null}
-
-              <form className="mt-6 space-y-5" onSubmit={handleSubmit}>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700" htmlFor="public-requester-name">
-                      Your name
-                    </label>
-                    <input
-                      id="public-requester-name"
-                      type="text"
-                      required
-                      value={form.requesterName}
-                      onChange={(event) =>
-                        setForm((currentForm) => ({
-                          ...currentForm,
-                          requesterName: event.target.value,
-                        }))
-                      }
-                      placeholder="Enter your full name"
-                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700" htmlFor="public-requester-email">
-                      Email address
-                    </label>
-                    <input
-                      id="public-requester-email"
-                      type="email"
-                      required
-                      value={form.requesterEmail}
-                      onChange={(event) =>
-                        setForm((currentForm) => ({
-                          ...currentForm,
-                          requesterEmail: event.target.value,
-                        }))
-                      }
-                      placeholder="name@umt.edu.my"
-                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700" htmlFor="public-title">
-                    Title
-                  </label>
-                  <input
-                    id="public-title"
-                    type="text"
-                    required
-                    value={form.title}
-                    onChange={(event) =>
-                      setForm((currentForm) => ({
-                        ...currentForm,
-                        title: event.target.value,
-                      }))
-                    }
-                    placeholder="Example: Lab 2 Wi-Fi disconnected during class"
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                  />
-                </div>
-
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700" htmlFor="public-category">
-                      Department
-                    </label>
-                    <select
-                      id="public-category"
-                      value={form.category}
-                      onChange={(event) =>
-                        setForm((currentForm) => ({
-                          ...currentForm,
-                          category: event.target.value,
-                        }))
-                      }
-                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                    >
-                      {categoryOptions.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                      Routed department
-                    </p>
-                    <p className="mt-2 text-sm font-semibold text-slate-900">
-                      {categoryMeta[form.category]?.department}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-500">{categoryMeta[form.category]?.sla}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700" htmlFor="public-description">
-                    Description
-                  </label>
-                  <textarea
-                    id="public-description"
-                    required
-                    rows="6"
-                    value={form.description}
-                    onChange={(event) =>
-                      setForm((currentForm) => ({
-                        ...currentForm,
-                        description: event.target.value,
-                      }))
-                    }
-                    placeholder="Describe the issue, exact location, impact on campus operations, and any urgent safety or teaching risks."
-                    className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                  />
-                </div>
-
-                <div className="grid gap-4 rounded-3xl bg-slate-50 p-4 sm:grid-cols-3">
-                  <MiniStat label="Department" value={categoryMeta[form.category]?.serviceLabel} />
-                  <MiniStat label="Default location" value={categoryMeta[form.category]?.location} />
-                  <MiniStat label="Response target" value={categoryMeta[form.category]?.sla} />
-                </div>
-
-                <div className="flex justify-end border-t border-slate-200 pt-5">
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="inline-flex h-11 items-center justify-center rounded-2xl bg-[#003366] px-5 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(0,51,102,0.22)] transition hover:bg-[#0a4278] disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {isSubmitting ? 'Submitting...' : 'Submit Ticket'}
-                  </button>
-                </div>
-              </form>
-            </section>
-
-            <section className="space-y-6">
-              <article className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8">
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#003366]/70">
-                  Staff & Admin Access
-                </p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
-                  Sign in to the console
-                </h2>
-                <p className="mt-3 text-sm leading-6 text-slate-500">
-                  Use your username or email and password to access ticket operations, dispatching,
-                  assigned work queues, and user management.
-                </p>
-
-                {authError ? (
-                  <div className="mt-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>{authError}</span>
-                  </div>
-                ) : null}
-
-                <form className="mt-8 space-y-5" onSubmit={handleLoginSubmit}>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700" htmlFor="login">
-                      Email or username
-                    </label>
-                    <input
-                      id="login"
-                      type="text"
-                      required
-                      value={loginForm.login}
-                      onChange={(event) =>
-                        setLoginForm((currentForm) => ({
-                          ...currentForm,
-                          login: event.target.value,
-                        }))
-                      }
-                      placeholder="admin@umt.edu.my"
-                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700" htmlFor="password">
-                      Password
-                    </label>
-                    <input
-                      id="password"
-                      type="password"
-                      required
-                      value={loginForm.password}
-                      onChange={(event) =>
-                        setLoginForm((currentForm) => ({
-                          ...currentForm,
-                          password: event.target.value,
-                        }))
-                      }
-                      placeholder="Enter your password"
-                      className="h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={isLoggingIn}
-                    className="inline-flex h-12 w-full items-center justify-center rounded-2xl bg-[#003366] px-4 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(0,51,102,0.22)] transition hover:bg-[#0a4278] disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {isLoggingIn ? 'Signing in...' : 'Sign In'}
-                  </button>
-                </form>
-              </article>
-
-              <article className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_80px_rgba(15,23,42,0.12)] backdrop-blur sm:p-8">
-                <h2 className="text-lg font-semibold text-slate-950">Available departments</h2>
-                <div className="mt-4 grid gap-3">
-                  {categoryOptions.map((category) => (
-                    <div key={category} className="rounded-2xl bg-slate-50 px-4 py-4">
-                      <p className="text-sm font-semibold text-slate-900">{category}</p>
-                      <p className="mt-1 text-sm text-slate-500">{categoryMeta[category]?.department}</p>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            </section>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   function renderActiveView() {
-    if (activeNav === 'report-issue') return renderBasicAccessView()
-    if (activeNav === 'assigned-tickets') return renderAssignedTicketsPage()
-    if (activeNav === 'ticket-management') return renderManagementPage()
+    if (activeNav === 'report-issue') {
+      return (
+        <ReportIssuePage
+          categoryMeta={categoryMeta}
+          categoryOptions={categoryOptions}
+          effectiveRole={effectiveRole}
+          onCreateTicket={openCreateModal}
+        />
+      )
+    }
+    if (activeNav === 'assigned-tickets') {
+      return (
+        <AssignedTicketsPage
+          TicketDetailsPanelComponent={TicketDetailsPanel}
+          draftComment={draftComment}
+          filteredTickets={filteredTickets}
+          formatDateTime={formatDateTime}
+          getStatusLabel={getStatusLabel}
+          handleAssigneeChange={handleAssigneeChange}
+          handleCommentSubmit={handleCommentSubmit}
+          handleStatusChange={handleStatusChange}
+          isLoading={isLoading}
+          onCommentChange={setDraftComment}
+          onSelectTicket={setSelectedTicketId}
+          selectedAssigneeOptions={selectedAssigneeOptions}
+          selectedTicket={selectedTicket}
+          setStatusFilter={setStatusFilter}
+          statusFilter={statusFilter}
+          statusConfig={statusConfig}
+          statusOptions={statusOptions}
+        />
+      )
+    }
+    if (activeNav === 'ticket-management') {
+      return (
+        <TicketManagementPage
+          TicketDetailsPanelComponent={TicketDetailsPanel}
+          draftComment={draftComment}
+          filteredTickets={filteredTickets}
+          formatDateTime={formatDateTime}
+          getStatusLabel={getStatusLabel}
+          handleAssigneeChange={handleAssigneeChange}
+          handleCommentSubmit={handleCommentSubmit}
+          handleStatusChange={handleStatusChange}
+          isLoading={isLoading}
+          onCommentChange={setDraftComment}
+          onCreateTicket={openCreateModal}
+          onSelectTicket={setSelectedTicketId}
+          selectedAssigneeOptions={selectedAssigneeOptions}
+          selectedTicket={selectedTicket}
+          setStatusFilter={setStatusFilter}
+          statusFilter={statusFilter}
+          statusConfig={statusConfig}
+          statusOptions={statusOptions}
+        />
+      )
+    }
     if (activeNav === 'assignee-management' && isOperationsRole(effectiveRole)) {
-      return renderAssigneeManagementPage()
+      return (
+        <AssigneeManagementPage
+          assigneeInsights={assigneeInsights}
+          assigneeUsers={assigneeUsers}
+          busiestAssignee={busiestAssignee}
+          isUsersLoading={isUsersLoading}
+          onViewAssigneeTickets={(username) => {
+            setQuery(username)
+            setStatusFilter('ALL')
+            setActiveNav('ticket-management')
+            const firstTicket = tickets.find((ticket) => ticket.assignee === username) || null
+            if (firstTicket) {
+              setSelectedTicketId(firstTicket.id)
+            }
+          }}
+          openOrInProgressByAssignee={openOrInProgressByAssignee}
+          openRoutedTickets={openRoutedTickets}
+        />
+      )
     }
     if (activeNav === 'category-management' && isOperationsRole(effectiveRole)) {
-      return renderCategoryManagementPage()
+      return (
+        <CategoryManagementPage
+          beginEditCategory={beginEditCategory}
+          categories={categories}
+          categoriesError={categoriesError}
+          categoryForm={categoryForm}
+          categoryNotice={categoryNotice}
+          deletingCategoryId={deletingCategoryId}
+          distinctDepartmentCount={distinctDepartmentCount}
+          editingCategoryId={editingCategoryId}
+          filteredCategories={filteredCategories}
+          handleCategorySubmit={handleCategorySubmit}
+          handleDeleteCategory={handleDeleteCategory}
+          isCategoriesLoading={isCategoriesLoading}
+          isSavingCategory={isSavingCategory}
+          resetCategoryForm={resetCategoryForm}
+          setCategoryForm={setCategoryForm}
+        />
+      )
     }
     if (activeNav === 'user-management' && effectiveRole === 'ADMIN') {
-      return renderUserManagementPage()
+      return (
+        <UserManagementPage
+          adminUsersCount={adminUsersCount}
+          beginEditUser={beginEditUser}
+          deletingUserId={deletingUserId}
+          editingUserId={editingUserId}
+          filteredUsers={filteredUsers}
+          handleDeleteUser={handleDeleteUser}
+          handleUserSubmit={handleUserSubmit}
+          isSavingUser={isSavingUser}
+          isUsersLoading={isUsersLoading}
+          resetUserForm={resetUserForm}
+          setUserForm={setUserForm}
+          userForm={userForm}
+          userNotice={userNotice}
+          userRoleOptions={userRoleOptions}
+          users={users}
+          usersError={usersError}
+        />
+      )
     }
 
     if (!isOperationsRole(effectiveRole) && !isAssigneeRole(effectiveRole)) {
-      return renderBasicAccessView()
+      return (
+        <ReportIssuePage
+          categoryMeta={categoryMeta}
+          categoryOptions={categoryOptions}
+          effectiveRole={effectiveRole}
+          onCreateTicket={openCreateModal}
+        />
+      )
     }
 
-    return renderOperationsView()
-  }
-
-  function renderSubmissionPortal() {
     return (
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,204,0,0.12),_transparent_24%),linear-gradient(180deg,_#f4f8fc_0%,_#edf3f9_50%,_#f7fafc_100%)] px-4 py-6 text-slate-900 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-5xl">
-          <div className="rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-[0_24px_60px_rgba(15,23,42,0.08)] backdrop-blur sm:p-8">
-            <header className="flex flex-col gap-4 border-b border-slate-200/80 pb-6 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-[#003366]/70">
-                  I-Kampus
-                </p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-                  Submit Ticket
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
-                  This fallback screen is for signed-in requester access only.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#003366] text-sm font-semibold text-white">
-                    {(currentUser.username || currentUser.role || 'US').slice(0, 2).toUpperCase()}
-                  </div>
-                  <div className="hidden text-left sm:block">
-                    <p className="text-sm font-semibold text-slate-900">
-                      {currentUser.username || 'System User'}
-                    </p>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
-                      {currentUser.role}
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300 hover:text-[#003366]"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Logout
-                </button>
-              </div>
-            </header>
-
-            {submitNotice ? (
-              <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                {submitNotice}
-              </div>
-            ) : null}
-
-            {error ? (
-              <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-                {error}
-              </div>
-            ) : null}
-
-            <section className="mt-6 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-              <article className="rounded-3xl border border-slate-200/80 bg-white p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-950">Need campus support?</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Report IT, maintenance, security, academic, or facilities issues to the support
-                  team.
-                </p>
-
-                <button
-                  type="button"
-                  onClick={openCreateModal}
-                  className="mt-6 inline-flex h-11 items-center justify-center rounded-2xl bg-[#003366] px-5 text-sm font-semibold text-white shadow-[0_12px_24px_rgba(0,51,102,0.22)] transition hover:bg-[#0a4278]"
-                >
-                  Submit Ticket
-                </button>
-              </article>
-
-              <article className="rounded-3xl border border-slate-200/80 bg-slate-50 p-6 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-950">Available departments</h2>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {categoryOptions.map((category) => (
-                    <div key={category} className="rounded-2xl bg-white px-4 py-4">
-                      <p className="text-sm font-semibold text-slate-900">{category}</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {categoryMeta[category]?.department}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </article>
-            </section>
-          </div>
-        </div>
-        {renderTicketModal()}
-      </div>
+      <OperationsPage
+        effectiveRole={effectiveRole}
+        renderOverviewCards={renderOverviewCards}
+        renderStaffDashboard={renderStaffDashboard}
+      />
     )
   }
 
@@ -3256,11 +2097,48 @@ function App() {
   }
 
   if (!token || !currentUser) {
-    return renderPublicLandingPage()
+    return (
+      <PublicLandingPage
+        authError={authError}
+        categoryMeta={categoryMeta}
+        categoryOptions={categoryOptions}
+        error={error}
+        form={form}
+        handleLoginSubmit={handleLoginSubmit}
+        handleSubmit={handleSubmit}
+        isLoggingIn={isLoggingIn}
+        isSubmitting={isSubmitting}
+        loginForm={loginForm}
+        onLoginFormChange={(field, value) =>
+          setLoginForm((currentForm) => ({
+            ...currentForm,
+            [field]: value,
+          }))
+        }
+        onPublicFormChange={(field, value) =>
+          setForm((currentForm) => ({
+            ...currentForm,
+            [field]: value,
+          }))
+        }
+        submitNotice={submitNotice}
+      />
+    )
   }
 
   if (!isOperationsRole(effectiveRole) && !isAssigneeRole(effectiveRole) && !temporaryRole) {
-    return renderSubmissionPortal()
+    return (
+      <SubmissionPortalPage
+        categoryMeta={categoryMeta}
+        categoryOptions={categoryOptions}
+        currentUser={currentUser}
+        error={error}
+        onCreateTicket={openCreateModal}
+        onLogout={handleLogout}
+        renderTicketModal={renderTicketModal}
+        submitNotice={submitNotice}
+      />
+    )
   }
 
   return (
@@ -3363,190 +2241,6 @@ function App() {
       </div>
 
       {renderTicketModal()}
-    </div>
-  )
-}
-
-function MiniStat({ label, value }) {
-  return (
-    <div>
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-slate-900">{value}</p>
-    </div>
-  )
-}
-
-function TicketDetailsPanel({
-  commentValue,
-  mode = 'management',
-  onAssigneeChange,
-  onCommentChange,
-  onCommentSubmit,
-  onStatusChange,
-  selectedAssigneeOptions,
-  ticket,
-}) {
-  if (!ticket) {
-    return (
-      <section className="rounded-3xl border border-dashed border-slate-200 bg-white p-8 text-center shadow-sm">
-        <h2 className="text-lg font-semibold text-slate-950">No ticket selected</h2>
-        <p className="mt-2 text-sm text-slate-500">
-          Choose a ticket from the queue to review details, comments, and operational actions.
-        </p>
-      </section>
-    )
-  }
-
-  const statusBadge = statusConfig[ticket.status] || statusConfig.OPEN
-  const showAssignment = mode === 'management' || mode === 'assignment'
-  const showStatus = mode === 'management' || mode === 'status' || mode === 'status-comments'
-  const showComments = mode === 'management' || mode === 'comments' || mode === 'status-comments'
-  const showMetaGrid = mode !== 'comments'
-  return (
-    <section className="space-y-6">
-      <article className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-slate-200 pb-5">
-          <div className="flex flex-wrap items-center gap-3">
-            <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
-              I-Kampus-{ticket.id ?? 'NEW'}
-            </span>
-            <span
-              className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusBadge.className}`}
-            >
-              {statusBadge.label}
-            </span>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-semibold text-slate-950">{ticket.title}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">{ticket.description}</p>
-          </div>
-        </div>
-
-        {showMetaGrid ? (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <DetailStat icon={MapPin} label="Location" value={ticket.location} />
-            <DetailStat icon={Wrench} label="Department" value={ticket.department} />
-            <DetailStat icon={UserRound} label="Assignee" value={ticket.assignee} />
-            <DetailStat icon={Clock3} label="Created" value={formatDateTime(ticket.createdAt)} />
-          </div>
-        ) : null}
-
-        {showAssignment || showStatus ? (
-          <div className="mt-6 grid gap-4 rounded-3xl bg-slate-50 p-4">
-            <div className={`grid gap-4 ${showAssignment && showStatus ? 'sm:grid-cols-2' : 'sm:grid-cols-1'}`}>
-              {showStatus ? (
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Status</span>
-                  <select
-                    value={ticket.status}
-                    onChange={(event) => onStatusChange(ticket.id, event.target.value)}
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-[#003366] focus:ring-4 focus:ring-[#003366]/10"
-                  >
-                    {statusOptions.map((status) => (
-                      <option key={status} value={status}>
-                        {getStatusLabel(status)}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-
-              {showAssignment ? (
-                <label className="space-y-2">
-                  <span className="text-sm font-medium text-slate-700">Assignee</span>
-                  <select
-                    value={ticket.assignee}
-                    onChange={(event) => onAssigneeChange(ticket.id, event.target.value)}
-                    className="h-11 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-[#003366] focus:ring-4 focus:ring-[#003366]/10"
-                  >
-                    {selectedAssigneeOptions.map((assignee) => (
-                      <option key={assignee} value={assignee}>
-                        {assignee}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-      </article>
-
-      {showComments ? (
-      <article className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-950">Comments & history</h2>
-            <p className="mt-1 text-sm text-slate-500">
-              Lifecycle notes, staff updates, and requestor follow-up.
-            </p>
-          </div>
-          <MessageSquare className="h-5 w-5 text-[#003366]" />
-        </div>
-
-        <form className="mt-5" onSubmit={onCommentSubmit}>
-          <label className="sr-only" htmlFor="new-comment">
-            New comment
-          </label>
-          <textarea
-            id="new-comment"
-            rows="3"
-            value={commentValue}
-            onChange={(event) => onCommentChange(event.target.value)}
-            placeholder={
-              'Add an internal update or a reply for the requestor.'
-            }
-            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#003366] focus:bg-white focus:ring-4 focus:ring-[#003366]/10"
-          />
-          <div className="mt-3 flex justify-end">
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center justify-center rounded-2xl bg-[#003366] px-4 text-sm font-semibold text-white transition hover:bg-[#0a4278]"
-            >
-              Post update
-            </button>
-          </div>
-        </form>
-
-        <div className="mt-6 space-y-4">
-          {ticket.comments.map((comment) => (
-            <article key={comment.id} className="rounded-3xl bg-slate-50 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{comment.author}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">
-                    {comment.role}
-                  </p>
-                </div>
-                <p className="text-xs text-slate-500">{formatDateTime(comment.createdAt)}</p>
-              </div>
-              <p className="mt-3 text-sm leading-6 text-slate-600">{comment.message}</p>
-            </article>
-          ))}
-        </div>
-      </article>
-      ) : null}
-    </section>
-  )
-}
-
-function DetailStat({ icon, label, value }) {
-  const IconComponent = icon
-
-  return (
-    <div className="rounded-3xl bg-slate-50 p-4">
-      <div className="flex items-center gap-3">
-        <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white text-[#003366] shadow-sm">
-          <IconComponent className="h-4 w-4" />
-        </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-            {label}
-          </p>
-          <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
-        </div>
-      </div>
     </div>
   )
 }
